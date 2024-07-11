@@ -1,0 +1,3 @@
+src/cpu/riscv32.c:14:5:handle_trap	0	static
+src/cpu/riscv32.c:69:6:set_msix_handler	0	static
+src/cpu/riscv32.c:77:6:handle_external_trap	16	static

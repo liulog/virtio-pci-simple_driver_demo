@@ -1,0 +1,8 @@
+src/platform/imsic.c:64:5:imsic_get_addr	0	static
+src/platform/imsic.c:72:6:imsic_ipi_send	0	static
+src/platform/imsic.c:80:6:imsic_enable	0	static
+src/platform/imsic.c:97:6:imsic_disable	0	static
+src/platform/imsic.c:114:6:imsic_trigger	0	static
+src/platform/imsic.c:131:6:imsic_clear	0	static
+src/platform/imsic.c:147:5:imsic_get_irq	0	static
+src/platform/imsic.c:159:6:imsic_init	0	static

@@ -1,0 +1,5 @@
+src/driver/ns16550.c:35:5:UartPutc	0	static
+src/driver/ns16550.c:45:5:UartGetc	0	static
+src/driver/ns16550.c:54:5:UartOut	0	static
+src/driver/ns16550.c:59:6:UartInit	0	static
+src/driver/ns16550.c:86:6:UartIsr	0	static
