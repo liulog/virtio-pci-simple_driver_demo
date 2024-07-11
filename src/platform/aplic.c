@@ -62,23 +62,6 @@ void aplic_sourcecfg_delegate(struct aplic *aplic, int irq, int child)
     aplic->sourcecfg[irq - 1] = delegate | (child & 0x3ff);
 }
 
-// # Overview
-// Set the MSI target physical address. This only accepts the lower
-// 32-bits of an address.
-// ## Arguments
-// * `mode` the MSI mode (APLIC_MACHINE - machine or APLIC_SUPERVISOR - supervisor)
-// * `msi_addr` the physical address for messages. This MUST be page aligned.
-void aplic_set_msiaddr(struct aplic *aplic, int mode, u32 msi_addr)
-{
-    if (mode) {
-        aplic->smsiaddrcfg = msi_addr >> 12;
-        aplic->smsiaddrcfgh = 0;
-    } else {
-        aplic->mmsiaddrcfg = msi_addr >> 12;
-        aplic->mmsiaddrcfgh = 0;
-    }
-}
-
 // irq: 1 - 1023
 // pending: true: set the bit to 1, false: clear the bit to 0
 void aplic_set_ip(struct aplic *aplic, int irq, int pending)
@@ -132,7 +115,7 @@ void aplic_set_target_msi(struct aplic *aplic, int irq, int hart, int guest, int
 // ithreshold: interrupt threshold, 0 for no threshold
 void aplic_set_idc(struct aplic *aplic, int hart, int idelivery, int ithreshold)
 {
-    u32 addr = (u32)aplic + IDC + 32 * hart;
+    u64 addr = (u64)aplic + IDC + 32 * hart;
     APLIC_REG(addr + IDELIVERY) = idelivery;
     APLIC_REG(addr + ITHRESHOLD) = ithreshold;
 }
@@ -140,9 +123,8 @@ void aplic_set_idc(struct aplic *aplic, int hart, int idelivery, int ithreshold)
 int aplic_get_claimi(int aplic_mode, int hart)
 {
     struct aplic *aplic = aplic_get_addr(aplic_mode);
-    u32 addr = (u32)aplic + IDC + 32 * hart;
-    u32 claimi = APLIC_REG(addr + CLAIMI);
-
+    u64 addr = (u64)aplic + IDC + 32 * hart;
+    u64 claimi = APLIC_REG(addr + CLAIMI);
     return claimi >> 16;
 }
 
@@ -155,10 +137,11 @@ void aplic_enable_irq(int aplic_mode, int dm_mode, int irq, int enable)
     struct aplic *aplic = aplic_get_addr(aplic_mode);
 
     if (dm_mode == APLIC_DM_MSI) {
+        // MSI 模式的 APLIC's target
         aplic_set_target_msi(aplic, irq, 0, 0, irq);
         aplic_set_sourcecfg(aplic, irq, APLIC_SM_LEVEL_HIGH);
+        // APLIC 使能中断
         aplic_set_ie(aplic, irq, enable);
-        imsic_enable(aplic_mode, irq);
     } else {
         aplic_set_target_direct(aplic, irq, 0, 1);
         aplic_set_sourcecfg(aplic, irq, APLIC_SM_LEVEL_HIGH);
@@ -166,30 +149,16 @@ void aplic_enable_irq(int aplic_mode, int dm_mode, int irq, int enable)
     }
 }
 
-void aplic_enable(int irq)
-{
-    aplic_enable_irq(APLIC_MACHINE, APLIC_DM_MSI, irq, 1);
-}
-
 // dm_mode: APLIC_DM_DIRECT - direct, APLIC_DM_MSI - msi
 void aplic_init(int dm_mode)
 {
-    struct aplic *mplic = aplic_get_addr(APLIC_MACHINE);
-    struct aplic *splic = aplic_get_addr(APLIC_SUPERVISOR);
+    struct aplic *aplic = aplic_get_addr(APLIC_SUPERVISOR);
+
+    // 1. 配置 domaincfg
+    aplic_set_domaincfg(aplic, dm_mode);
 
     if (dm_mode == APLIC_DM_DIRECT) {
-        // clear irq
-        while (aplic_get_claimi(APLIC_MACHINE, 0 ) != 0)
-            ;
-    }
-
-    aplic_set_domaincfg(mplic, dm_mode);
-    aplic_set_domaincfg(splic, dm_mode);
-    if (dm_mode == APLIC_DM_MSI) {
-        aplic_set_msiaddr(mplic, APLIC_MACHINE, imsic_get_addr(APLIC_MACHINE, 0));
-        aplic_set_msiaddr(splic, APLIC_SUPERVISOR, imsic_get_addr(APLIC_SUPERVISOR, 0));
-    } else {
-        aplic_set_idc(mplic, 0, 1, 0);
-        aplic_set_idc(splic, 0, 1, 0);
+        // 配置 idc
+        aplic_set_idc(aplic, 0, 1, 0);
     }
 }

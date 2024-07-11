@@ -35,9 +35,10 @@ BIN_NAME	= $(BUILD_DIR)/demo
 SRCS = 	$(SOURCE_DIR)/main.c \
 		$(SOURCE_DIR)/driver/ns16550.c \
 		$(SOURCE_DIR)/library/printf/printf.c \
-		$(SOURCE_DIR)/cpu/riscv32.c \
+		$(SOURCE_DIR)/cpu/riscv64.c \
 		$(SOURCE_DIR)/platform/riscv-virt.c \
 		$(SOURCE_DIR)/platform/imsic.c \
+		$(SOURCE_DIR)/platform/aplic.c
 
 # 汇编源码
 ASMS = $(SOURCE_DIR)/cpu/start.S
@@ -97,6 +98,9 @@ $(BUILD_DIR)/%.o: %.S Makefile
 	@mkdir -p $(@D)
 	@echo building $<
 	@$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+
+gdb:
+	$(GDB) -x init.gdb
 
 debug:
 	tmux new-session -d 'qemu-system-riscv64 $(QEMU_ARGS) -S -s' \; \

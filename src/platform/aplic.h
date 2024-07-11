@@ -3,13 +3,9 @@
 
 #include "types.h"
 
-#define APLIC_VIRTIO0_IRQ   0x01 // rng
-#define APLIC_VIRTIO1_IRQ   0x02 // blk
-#define APLIC_VIRTIO2_IRQ   0x03 // net
-#define APLIC_UART0_IRQ     0x0a // uart
-#define APLIC_PCIE0_IRQ     0x21 // pci-net
-#define APLIC_MSIX0_IRQ     0x80 // pci-msix
-#define APLIC_IPI0_IRQ      0xff // ipi
+#define APLIC_UART0_IRQ     0x0a    // uart
+#define APLIC_PCIE0_IRQ     0x21    // pci-net
+#define APLIC_MSIX0_IRQ     0x80    // pci-msix
 
 enum {
     APLIC_MACHINE = 0,
@@ -86,7 +82,6 @@ struct aplic *aplic_get_addr(int aplic_mode);
 void aplic_set_domaincfg(struct aplic *aplic, int mode);
 void aplic_set_sourcecfg(struct aplic *aplic, int irq, int mode);
 void aplic_sourcecfg_delegate(struct aplic *aplic, int irq, int child);
-void aplic_set_msiaddr(struct aplic *aplic, int mode, u32 msi_addr);
 void aplic_set_ip(struct aplic *aplic, int irq, int pending);
 void aplic_set_ie(struct aplic *aplic, int irq, int enable);
 void aplic_set_target_direct(struct aplic *aplic, int irq, int hart, int prio);

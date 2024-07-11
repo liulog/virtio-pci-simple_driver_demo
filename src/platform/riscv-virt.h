@@ -18,6 +18,7 @@
 #define PCIE0_ECAM          0x30000000UL
 #define PCIE0_MMIO          0x40000000UL
 
+void interrupts_init(void);
 void plt_virt_init(void);
 
 #endif /* RISCV_VIRT_H_ */

@@ -18,9 +18,9 @@ int version = 20240711;
 char *hello = "Hello, qemu and risc-v!";
 
 int main( void )
-{
+{	
+	// 初始化平台设备 (包含uart & plic)
 	plt_virt_init();
-	UartInit(NS16550_ADDR);
 
 	printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
 	printf("  version is: %d\n", version);

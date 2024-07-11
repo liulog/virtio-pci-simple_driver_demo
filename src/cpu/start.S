@@ -26,7 +26,7 @@ _start:
  .align 2
 trap_entry:
 	addi sp, sp, -portCONTEXT_SIZE
-	sd x1, 1 * 8( sp )
+	sd x1, 1 * 8( sp )			/* x2(sp), x3(gp), x4(tp) 有特殊用途 */
 	sd x5, 2 * 8( sp )
 	sd x6, 3 * 8( sp )
 	sd x7, 4 * 8( sp )
@@ -55,18 +55,18 @@ trap_entry:
 	sd x30, 27 * 8( sp )
 	sd x31, 28 * 8( sp )
 
-	csrr t0, sstatus					/* Required for MPIE bit. */
+	csrr t0, sstatus					/* Required for SPIE bit. */
 	sd t0, 29 * 8( sp )
 
 	// call C function: handle_trap
 	csrr a0, scause
-	csrr a1, sepc
+	csrr a1, sepc						/* handle_trap 需要使用的参数 */
 	jal handle_trap
-	csrw sepc, a0
+	csrw sepc, a0						/* a0 = handle_trap 返回值 */
 
-	/* ld mstatus with the interrupt enable bits used by the task. */
+	/* ld sstatus with the interrupt enable bits used by the task. */
 	ld  t0, 29 * 8( sp )
-	csrw sstatus, t0						/* Required for MPIE bit. */
+	csrw sstatus, t0					/* Required for SPIE bit. */
 
 	ld  x1, 1 * 8( sp )
 	ld  x5, 2 * 8( sp )		/* t0 */

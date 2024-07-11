@@ -1,26 +1,19 @@
 #ifndef RISCV_H_
 #define RISCV_H_
 
-// #define MSTATUS_SIE         0x00000002
-// #define MSTATUS_MIE         0x00000008
-// #define MSTATUS_MPIE        0x00000080
-// #define MSTATUS_MPP         0x00001800
+#define SSTATUS_SIE         (1 << 1)
 
-// #define IRQ_M_SOFT          3
-// #define IRQ_M_TIMER         7
-// #define IRQ_M_EXT           11
+#define IRQ_S_SOFT          1
+#define IRQ_S_TIMER         5
+#define IRQ_S_EXT           9
 
-// #define IRQ_S_SOFT          1
-// #define IRQ_S_TIMER         5
-// #define IRQ_S_EXT           9
+#define SIP_SSIP            (1 << IRQ_S_SOFT)
+#define SIP_STIP            (1 << IRQ_S_TIMER)
+#define SIP_SEIP            (1 << IRQ_S_EXT)
 
-// #define MIP_MSIP            (1 << IRQ_M_SOFT)
-// #define MIP_MTIP            (1 << IRQ_M_TIMER)
-// #define MIP_MEIP            (1 << IRQ_M_EXT)
-
-// #define MIP_SSIP            (1 << IRQ_S_SOFT)
-// #define MIP_STIP            (1 << IRQ_S_TIMER)
-// #define MIP_SEIP            (1 << IRQ_S_EXT)
+#define SIE_SSIE            (1 << IRQ_S_SOFT)
+#define SIE_STIE            (1 << IRQ_S_TIMER)
+#define SIE_SEIE            (1 << IRQ_S_EXT)
 
 #define read_csr(reg) ({ unsigned long __tmp; \
   __asm volatile ("csrr %0, " #reg : "=r"(__tmp)); \
@@ -52,6 +45,5 @@
 
 // #define cpuid()         read_csr(mhartid)
 // #define dsb()           __asm volatile( "fence" )
-
 
 #endif //RISCV_H_
