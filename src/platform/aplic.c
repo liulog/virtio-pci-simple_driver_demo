@@ -5,10 +5,6 @@
 
 #define DOMAINCFG               (0x0000)
 #define SOURCECFG               (0x0004)
-#define MMSIADDRCFG             (0x1BC0)
-#define MMSIADDRCFGH            (0x1BC4)
-#define SMSIADDRCFG             (0x1BC8)
-#define SMSIADDRCFGH            (0x1BCC)
 #define SETIP                   (0x1C00)
 #define SETIPNUM                (0x1CDC)
 #define IN_CLRIP                (0x1D00)
@@ -52,14 +48,6 @@ void aplic_set_domaincfg(struct aplic *aplic, int dm_mode)
 void aplic_set_sourcecfg(struct aplic *aplic, int irq, int irq_mode)
 {
     aplic->sourcecfg[irq - 1] = irq_mode;
-}
-
-// irq: 1 - 1023
-// child: the child aplic to delegate this interrupt to
-void aplic_sourcecfg_delegate(struct aplic *aplic, int irq, int child)
-{
-    u32 delegate = 1 << 10;
-    aplic->sourcecfg[irq - 1] = delegate | (child & 0x3ff);
 }
 
 // irq: 1 - 1023

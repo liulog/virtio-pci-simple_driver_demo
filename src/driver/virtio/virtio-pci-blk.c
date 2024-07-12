@@ -1,5 +1,5 @@
 #include "riscv.h"
-#include "riscv32.h"
+#include "trap-handler.h"
 #include "aplic.h"
 #include "pci.h"
 #include "virtio.h"

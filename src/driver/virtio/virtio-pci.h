@@ -2,7 +2,7 @@
 #define VIRTIO_PCI_H_
 
 #include "types.h"
-#include "riscv32.h"
+#include "trap-handler.h"
 #include "virtio-ring.h"
 
 /* Common configuration */
@@ -37,6 +37,13 @@ struct virtio_pci_cap {
     le32 length; /* Length of the structure, in bytes. */
 };
 
+// 仅寻址超过 4GB 时, 使用
+struct virtio_pci_cap64{
+    struct virtio_pci_cap cap;
+    u32 offset_hi;
+    u32 length_hi;
+};
+
 struct virtio_pci_notify_cap {
     struct virtio_pci_cap cap;
     le32 notify_off_multiplier; /* Multiplier for queue_notify_off. */
@@ -52,21 +59,16 @@ struct virtio_pci_common_cfg {
     le16 num_queues; /* read-only for driver */
     u8 device_status; /* read-write */
     u8 config_generation; /* read-only for driver */
+    
     /* About a specific virtqueue. */
     le16 queue_select; /* read-write */
     le16 queue_size; /* read-write */
     le16 queue_msix_vector; /* read-write */
     le16 queue_enable; /* read-write */
     le16 queue_notify_off; /* read-only for driver */
-    // le64 queue_desc; /* read-write */
-    le32 queue_desc_lo;		/* read-write */
-	le32 queue_desc_hi;		/* read-write */
-    // le64 queue_driver; /* read-write */
-	le32 queue_avail_lo;	/* read-write */
-	le32 queue_avail_hi;	/* read-write */
-    // le64 queue_device; /* read-write */
-	le32 queue_used_lo;		/* read-write */
-	le32 queue_used_hi;		/* read-write */
+    le64 queue_desc; /* read-write */
+    le64 queue_driver; /* read-write avail ring */
+    le64 queue_device; /* read-write used ring */
     le16 queue_notify_data; /* read-only for driver */
     le16 queue_reset;       /* read-write */
 };
@@ -94,11 +96,11 @@ enum virtio_msix_status {
 	VIRTIO_MSIX_ENABLED = 2
 };
 
-int virtio_pci_read_caps(virtio_pci_hw_t *hw, u32 pci_base, trap_handler_fn *msix_isr);
+int virtio_pci_read_caps(virtio_pci_hw_t *hw, u64 pci_base, trap_handler_fn *msix_isr);
 u64 virtio_pci_get_device_features(virtio_pci_hw_t *hw);
 u64 virtio_pci_get_driver_features(virtio_pci_hw_t *hw);
 void virtio_pci_set_driver_features(virtio_pci_hw_t *hw, u64 features);
-u32 virtio_pci_get_queue_size(virtio_pci_hw_t *hw, int qid);
+u16 virtio_pci_get_queue_size(virtio_pci_hw_t *hw, int qid);
 void virtio_pci_set_queue_size(virtio_pci_hw_t *hw, int qid, int qsize);
 void virtio_pci_set_queue_addr(virtio_pci_hw_t *hw, int qid, struct vring *vr);
 u32 virtio_pci_get_queue_notify_off(virtio_pci_hw_t *hw, int qid);

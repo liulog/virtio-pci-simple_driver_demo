@@ -2,6 +2,7 @@
 #define VIRTIO_PCI_BLK_H_
 
 #include "types.h"
+#include "virtio-blk.h"
 
 int virtio_pci_blk_init(void);
 void virtio_pci_blk_cfg(void);

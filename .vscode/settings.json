@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "pci.h": "c",
+        "virtio-pci-rng.h": "c",
+        "virtio-pci.h": "c"
+    }
+}

@@ -81,7 +81,6 @@ struct aplic {
 struct aplic *aplic_get_addr(int aplic_mode);
 void aplic_set_domaincfg(struct aplic *aplic, int mode);
 void aplic_set_sourcecfg(struct aplic *aplic, int irq, int mode);
-void aplic_sourcecfg_delegate(struct aplic *aplic, int irq, int child);
 void aplic_set_ip(struct aplic *aplic, int irq, int pending);
 void aplic_set_ie(struct aplic *aplic, int irq, int enable);
 void aplic_set_target_direct(struct aplic *aplic, int irq, int hart, int prio);
@@ -89,8 +88,6 @@ void aplic_set_target_msi(struct aplic *aplic, int irq, int hart, int guest, int
 void aplic_set_idc(struct aplic *aplic, int hart, int idelivery, int ithreshold);
 int aplic_get_claimi(int aplic_mode, int hart);
 void aplic_enable_irq(int aplic_mode, int dm_mode, int irq, int enable);
-void aplic_enable(int irq);
 void aplic_init(int mode);
-
 
 #endif /* APLIC_H_ */

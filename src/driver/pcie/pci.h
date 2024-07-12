@@ -2,7 +2,7 @@
 #define PCI_H_
 
 #include "types.h"
-#include "riscv32.h"
+#include "trap-handler.h"
 
 #define PCI_ADDR_BAR0    		0x10
 #define PCI_ADDR_CAP    		0x34
@@ -40,15 +40,17 @@ struct pci_msix_tbl {       // MSI-X 表项
 };
 
 
-u8 pci_config_read8(u32 offset);
-u16 pci_config_read16(u32 offset);
-u32 pci_config_read32(u32 offset);
+u8 pci_config_read8(u64 offset);
+u16 pci_config_read16(u64 offset);
+u32 pci_config_read32(u64 offset);
+u64 pci_config_read64(u64 offset);
+
 void pci_config_write8(u32 offset, u8 val);
 void pci_config_write16(u32 offset, u16 val);
 void pci_config_write32(u32 offset, u32 val);
-void pci_config_read(void *buf, u32 len, u32 offset);
-u32 pci_device_probe(u16 vendor_id, u16 device_id);
+void pci_config_read(void *buf, u64 len, u64 offset);
+u64 pci_device_probe(u16 vendor_id, u16 device_id);
 void pci_set_msix(struct pci_msix *msix, u32 pci_base, u32 pos, trap_handler_fn *msix_isr);
 u32 pci_alloc_irq_number(void);
-u32 pci_alloc_mmio(u32 sz);
+u64 pci_alloc_mmio(u64 sz);
 #endif /* PCI_H_ */

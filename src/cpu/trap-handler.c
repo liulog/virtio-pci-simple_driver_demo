@@ -17,15 +17,9 @@ u64 handle_trap(u64 scause, u64 sepc)
 	scause = scause & 0xFF;
 	if (is_interrupt) {
 		switch (scause) {
-		case IRQ_S_SOFT: // s-mode soft
-			//aclint_clr_ssip(); // clear soft isr
-            printf("ssoft isr: mcause %lld\n", scause);
-			break;
-
-		case IRQ_S_EXT: // external
+		case IRQ_S_EXT: 		// 仅处理外部中断
 			handle_external_trap(APLIC_SUPERVISOR);
 			break;
-
 		default:
 			printf("unknow isr: %lld\n", scause);
 			break;

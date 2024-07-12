@@ -3,15 +3,14 @@
 #include "printf/printf.h"
 #include "aplic.h"
 #include "imsic.h"
-// #include "aclint_mtimer.h"
 #include "ns16550.h"
-// #include "pci.h"
+#include "pcie/pci.h"
 // #include "virtio-pci-net.h"
-// #include "virtio-pci-rng.h"
+#include "virtio/virtio-pci-rng.h"
 // #include "virtio-pci-blk.h"
 
 // void virtio_pci_net_test(void);
-// void virtio_pci_rng_test(void);
+void virtio_pci_rng_test(void);
 // void virtio_pci_blk_test(void);
 
 int version = 20240711;
@@ -27,18 +26,14 @@ int main( void )
 	printf("  %s\n", hello);
 	printf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
 
-	// aclint_add_mtimecmp(D_CLOCK_RATE, 0);
-	// 写到 supervisor mode 的 hart 0
-	// imsic_ipi_send(APLIC_SUPERVISOR, 0);
-
 	// pci_rng_test
-	// virtio_pci_rng_test();
+	virtio_pci_rng_test();
 	// virtio_pci_blk_test();
 	// virtio_pci_net_test();
 
-	while(1)
-		;
-
+	printf("All aaplication done!\n");
+	while(1) ;
+	
 	return 0;
 }
 
@@ -64,30 +59,30 @@ int main( void )
 // 	// }
 // }
 
-// void virtio_pci_rng_test(void)
-// {
-// 	int r = virtio_pci_rng_init();
-// 	printf("r: %d\n", r);
+void virtio_pci_rng_test(void)
+{
+	int r = virtio_pci_rng_init();
+	printf("r: %d\n", r);
 
-// 	u32 buf[4] = { 0 };
+	u32 buf[4] = { 0 };
 
-// 	for (int n = 0; n < 16; ++n){
-// 		printf("==== %d ====\n", n);
-// 		int rlen = virtio_pci_rng_read((u8 *)buf, sizeof(buf));
-// 		(void)rlen;
-// 		//printf("rlen: %d\n", rlen);
+	for (int n = 0; n < 16; ++n){
+		printf("==== %d ====\n", n);
+		int rlen = virtio_pci_rng_read((u8 *)buf, sizeof(buf));
+		(void)rlen;
+		//printf("rlen: %d\n", rlen);
 
-// 		for (int i = 0; i < sizeof(buf)/sizeof(buf[0]); i += 4) {
-// 			printf("0x%08x 0x%08x 0x%08x 0x%08x\n", buf[i], buf[i+1], buf[i+2], buf[i+3]);
-// 		}
+		for (int i = 0; i < sizeof(buf)/sizeof(buf[0]); i += 4) {
+			printf("0x%08x 0x%08x 0x%08x 0x%08x\n", buf[i], buf[i+1], buf[i+2], buf[i+3]);
+		}
 
-// 		for (int i = 0; i < sizeof(buf)/sizeof(buf[0]); ++i) {
-// 			buf[i] = 0;
-// 		}
-// 	}
+		for (int i = 0; i < sizeof(buf)/sizeof(buf[0]); ++i) {
+			buf[i] = 0;
+		}
+	}
 
-// 	printf("virtio-pci-rng test passed!\n");
-// }
+	printf("virtio-pci-rng test passed!\n");
+}
 
 // #define DATA_LEN	(SECTOR_SZIE*2)
 // #define TEST_CNT  	(16) //(64*1024*1024/DATA_LEN) // 64MB

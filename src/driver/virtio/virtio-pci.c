@@ -1,6 +1,6 @@
 #include "riscv.h"
 #include "printf/printf.h"
-#include "pci.h"
+#include "pcie/pci.h"
 #include "virtio-pci.h"
 
 /*
@@ -65,14 +65,15 @@ type 	region 		offset 	length	bar
 #define PCI_REG8(reg)   (*(volatile u8 *)(reg))
 #define PCI_REG16(reg)  (*(volatile u16 *)(reg))
 #define PCI_REG32(reg)  (*(volatile u32 *)(reg))
+#define PCI_REG64(reg)  (*(volatile u64 *)(reg))
 
 //struct virtio_pci_hw g_hw = { 0 };
 
 static void *get_cfg_addr(u64 pci_base, struct virtio_pci_cap *cap)
 {   
-    // 所在的 BAR
+    // 对于 64bit来说是 BAR4 & BAR5
     u64 reg = pci_base + PCI_ADDR_BAR0 + 4 * cap->bar;
-    return (void *)((pci_config_read32(reg) & 0xFFFFFFF0) + cap->offset);
+    return (void *)((pci_config_read64(reg) & 0xFFFFFFFFFFFFFFF0) + cap->offset);
 }
 
 int virtio_pci_read_caps(virtio_pci_hw_t *hw, u64 pci_base, trap_handler_fn *msix_isr)
@@ -82,57 +83,40 @@ int virtio_pci_read_caps(virtio_pci_hw_t *hw, u64 pci_base, trap_handler_fn *msi
     //struct virtio_pci_hw *hw = &g_hw;
 
     pos = pci_config_read8(pci_base + PCI_ADDR_CAP);       // 第一个 cap 偏移
-    printf("cap: 0x%08x\n", pci_base + PCI_ADDR_CAP);      // cap pointer 在 ECAM 整个区域中的 offset
+    printf("cap: 0x%016llx\n", pci_base + PCI_ADDR_CAP);      // cap pointer 在 ECAM 整个区域中的 offset
 
+    // 遍历所有的 capability
     while (pos) {
-        printf("pos: 0x%02x\n", pos);
         pos += pci_base;
-        printf("cap: 0x%08x\n", pos);
         pci_config_read(&cap, sizeof(cap), pos);
 
-        if (cap.cap_vndr == PCI_CAP_ID_MSIX) {                          // PCI_CAP_ID_MSIX
-            // enable msi-x
-            pci_set_msix(&hw->msix, pci_base, pos, msix_isr);
-            // read cap again
-            pci_config_read(&cap, sizeof(cap), pos);
-
-            /* Transitional devices would also have this capability,
-			 * that's why we also check if msix is enabled.
-			 * 1st byte is cap ID; 2nd byte is the position of next
-			 * cap; next two bytes are the flags.
-			 */
-			u16 flags = ((u16 *)&cap)[1];
-            printf("flags: 0x%04x\n", flags);
-
-			if (flags & PCI_MSIX_ENABLE)
-				hw->use_msix = VIRTIO_MSIX_ENABLED;
-			else
-				hw->use_msix = VIRTIO_MSIX_DISABLED;
-        }
-
-        if (cap.cap_vndr != PCI_CAP_ID_VNDR) {                          // PCI_CAP_ID_VNDR vendor-specific Cap 
-			printf("[%2x] skipping non VNDR cap id: %02x\n",
+        if (cap.cap_vndr != PCI_CAP_ID_VNDR) {         // PCI_CAP_ID_VNDR vendor-specific Cap 
+			printf("[%2llx] skipping non VNDR cap id: %02x\n",
 				    pos, cap.cap_vndr);
 			goto next;
 		}
 
-        printf("[%2x] cfg type: %u, bar: %u, offset: %04x, len: %u\n",
+        printf("[%2llx] cfg type: %u, bar: %u, offset: %04x, len: %u\n",
 			    pos, cap.cfg_type, cap.bar, cap.offset, cap.length);
 
         switch (cap.cfg_type) {
 		case VIRTIO_PCI_CAP_COMMON_CFG:
 			hw->common_cfg = get_cfg_addr(pci_base, &cap);
+            printf("common_cfg addr: %016llx\n", (u64)hw->common_cfg);
 			break;
 		case VIRTIO_PCI_CAP_NOTIFY_CFG:
 			pci_config_read(&hw->notify_off_multiplier,
 					4, pos + sizeof(cap));
             hw->notify_cfg = get_cfg_addr(pci_base, &cap);
+            printf("notify_cfg addr: %016llx\n", (u64)hw->notify_cfg);
 			break;
 		case VIRTIO_PCI_CAP_DEVICE_CFG:
 			hw->device_cfg = get_cfg_addr(pci_base, &cap);
+            printf("device_cfg addr: %016llx\n", (u64)hw->device_cfg);
 			break;
 		case VIRTIO_PCI_CAP_ISR_CFG:
 			hw->isr_cfg = get_cfg_addr(pci_base, &cap);
+            printf("isr_cfg addr: %016llx\n", (u64)hw->isr_cfg);
 			break;
 		}
 next:
@@ -193,7 +177,7 @@ void virtio_pci_set_driver_features(virtio_pci_hw_t *hw, u64 features)
     PCI_REG32(&cfg->driver_feature) = features >> 32;
 }
 
-u32 virtio_pci_get_queue_size(virtio_pci_hw_t *hw, int qid)
+u16 virtio_pci_get_queue_size(virtio_pci_hw_t *hw, int qid)
 {
     struct virtio_pci_common_cfg *cfg = hw->common_cfg;
 
@@ -220,9 +204,9 @@ void virtio_pci_set_queue_addr(virtio_pci_hw_t *hw, int qid, struct vring *vr)
     PCI_REG16(&cfg->queue_select) = qid;
     dsb();
 
-    PCI_REG32(&cfg->queue_desc_lo) = (u32)vr->desc;
-    PCI_REG32(&cfg->queue_avail_lo) = (u32)vr->avail;
-    PCI_REG32(&cfg->queue_used_lo) = (u32)vr->used;
+    PCI_REG64(&cfg->queue_desc) = (u64)vr->desc;
+    PCI_REG64(&cfg->queue_driver) = (u64)vr->avail;
+    PCI_REG64(&cfg->queue_device) = (u64)vr->used;
 }
 
 u32 virtio_pci_get_queue_notify_off(virtio_pci_hw_t *hw, int qid)
@@ -245,7 +229,7 @@ void *virtio_pci_get_queue_notify_addr(virtio_pci_hw_t *hw, int qid)
 
     // 获得地址
     u16 notify_off = PCI_REG16(&cfg->queue_notify_off);
-    return (void *)((u32)hw->notify_cfg + notify_off * hw->notify_off_multiplier);
+    return (void *)((u64)hw->notify_cfg + notify_off * hw->notify_off_multiplier);
 }
 
 // 通知 qid 对应的 virt queue
@@ -388,40 +372,20 @@ void virtio_pci_print_common_cfg(virtio_pci_hw_t *hw)
     printf("features: 0x%016llx\n", features);
 }
 
-u32 virtio_pci_get_config(virtio_pci_hw_t *hw, int offset, int size)
-{
-    u32 val = 0;
-    u32 addr = (u32)hw->device_cfg;
-
-    switch (size) {
-	case 1:
-		val = PCI_REG8(addr + offset);
-		break;
-	case 2:
-		val = PCI_REG16(addr + offset);
-		break;
-	case 4:
-		val = PCI_REG32(addr + offset);
-		break;
-	}
-
-	return val;
-}
-
 int virtio_pci_setup_queue(virtio_pci_hw_t *hw, struct vring *vr)
 {
     u16 notify_off;
     u32 desc_addr, avail_addr, used_addr;
     struct virtio_pci_common_cfg *cfg = hw->common_cfg;
 
-	desc_addr = (u32)vr->desc;
-	avail_addr = (u32)vr->avail;
-	used_addr = (u32)vr->used;
+	desc_addr = (u64)vr->desc;
+	avail_addr = (u64)vr->avail;
+	used_addr = (u64)vr->used;
 
     PCI_REG32(&cfg->queue_select) = vr->qid;
-    PCI_REG32(&cfg->queue_desc_lo) = desc_addr;
-    PCI_REG32(&cfg->queue_avail_lo) = avail_addr;
-    PCI_REG32(&cfg->queue_used_lo) = used_addr;
+    PCI_REG64(&cfg->queue_desc) = desc_addr;
+    PCI_REG64(&cfg->queue_driver) = avail_addr;
+    PCI_REG64(&cfg->queue_device) = used_addr;
 
     notify_off = PCI_REG16(&cfg->queue_notify_off);
     vr->notify_addr = (void *)((u8 *)hw->notify_cfg +

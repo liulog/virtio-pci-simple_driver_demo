@@ -22,7 +22,6 @@ CFLAGS += -ffunction-sections -fdata-sections
 CFLAGS += --static -nostdlib -nodefaultlibs
 CFLAGS += -fno-builtin-printf -DPRINTF_INCLUDE_CONFIG_H=1 -DD_CLOCK_RATE=10000000
 CFLAGS += -Iinclude -Isrc/cpu -Isrc/driver -Isrc/library -Isrc/platform	# 使用 CFLAGS 的 -I 包含自定义文件夹
-# CFLAGS += -Isrc/driver/virtio -Isrc/driver/pcie
 
 # 链接参数
 LDFLAGS = -nostdlib -Tqemu.lds ${ABI}
@@ -38,7 +37,12 @@ SRCS = 	$(SOURCE_DIR)/main.c \
 		$(SOURCE_DIR)/cpu/trap-handler.c \
 		$(SOURCE_DIR)/platform/riscv-virt.c \
 		$(SOURCE_DIR)/platform/imsic.c \
-		$(SOURCE_DIR)/platform/aplic.c
+		$(SOURCE_DIR)/platform/aplic.c \
+		$(SOURCE_DIR)/driver/pcie/pci.c \
+		$(SOURCE_DIR)/driver/virtio/virtio-pci-rng.c \
+		$(SOURCE_DIR)/driver/virtio/virtio-rng.c \
+		$(SOURCE_DIR)/driver/virtio/virtio-pci.c \
+		$(SOURCE_DIR)/driver/virtio/virtio-ring.c
 
 # 汇编源码
 ASMS = $(SOURCE_DIR)/cpu/start.S
@@ -48,9 +52,10 @@ OBJS = $(SRCS:%.c=$(BUILD_DIR)/%.o) $(ASMS:%.S=$(BUILD_DIR)/%.o)
 # DEPS = $(SRCS:%.c=$(BUILD_DIR)/%.d) $(ASMS:%.S=$(BUILD_DIR)/%.d)
 # -include $(DEPS)
 
-QEMU_ARGS = -nographic -machine virt,aia=aplic-imsic -net none \
-  		-smp 1 \
-		-kernel ${BIN_NAME}.bin
+QEMU_ARGS = -nographic -machine virt,aia=aplic-imsic -net none -smp 1 \
+		-kernel ${BIN_NAME}.bin \
+		-device virtio-rng-pci,bus=pcie.0,addr=1
+
 
 all:
 	@echo Please use make run, make debug and make clean 

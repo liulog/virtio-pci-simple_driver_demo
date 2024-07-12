@@ -23,7 +23,7 @@ u32 virtio_vring_size(u32 qsize)
 int virtio_vring_init(struct vring *vr, u8 *buf, u32 buf_len, u32 qsize, int qid)
 {
     u32 vr_size = virtio_vring_size(qsize);
-    if (vr_size > buf_len) { // buf is small
+    if (vr_size > buf_len) { 					// buf is small
         return -1;
     }
 
