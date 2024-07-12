@@ -1,5 +1,5 @@
 #include "riscv.h"
-#include "riscv64.h"
+#include "trap-handler.h"
 #include "ns16550.h"
 #include "printf/printf.h"
 #include "aplic.h"
@@ -52,7 +52,6 @@ void set_msix_handler(trap_handler_fn handler, int irq)	// 注册中断处理函
 void handle_external_trap(int mode)
 {
 	int irq = imsic_get_irq(mode);
-	printf("mode %d, irq: %d\n", mode, irq);
 	if (irq == APLIC_UART0_IRQ) {
 		UartIsr();
 	// } else if (irq == APLIC_VIRTIO1_IRQ) {

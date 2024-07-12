@@ -154,7 +154,7 @@ void aplic_init(int dm_mode)
 {
     struct aplic *aplic = aplic_get_addr(APLIC_SUPERVISOR);
 
-    // 1. 配置 domaincfg
+    // 配置 domaincfg
     aplic_set_domaincfg(aplic, dm_mode);
 
     if (dm_mode == APLIC_DM_DIRECT) {

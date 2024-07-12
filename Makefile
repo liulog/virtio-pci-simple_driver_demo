@@ -35,7 +35,7 @@ BIN_NAME	= $(BUILD_DIR)/demo
 SRCS = 	$(SOURCE_DIR)/main.c \
 		$(SOURCE_DIR)/driver/ns16550.c \
 		$(SOURCE_DIR)/library/printf/printf.c \
-		$(SOURCE_DIR)/cpu/riscv64.c \
+		$(SOURCE_DIR)/cpu/trap-handler.c \
 		$(SOURCE_DIR)/platform/riscv-virt.c \
 		$(SOURCE_DIR)/platform/imsic.c \
 		$(SOURCE_DIR)/platform/aplic.c
