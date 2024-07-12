@@ -13,6 +13,10 @@ void plt_virt_init(void)
 
 	// interrupts init
 	interrupts_init();
+
+	// enable uart irq
+	aplic_enable_irq(APLIC_SUPERVISOR, APLIC_DM_MSI, APLIC_UART0_IRQ, 1);
+	imsic_enable(APLIC_SUPERVISOR, APLIC_UART0_IRQ);
 }
 
 void interrupts_init(void){
@@ -22,13 +26,6 @@ void interrupts_init(void){
 
 	imsic_init();
 	aplic_init(APLIC_DM_MSI); 							// msix mode, 选择 MSI-Mode
-
-	// interrupts enable (MSI)
-	aplic_enable_irq(APLIC_SUPERVISOR, APLIC_DM_MSI, APLIC_UART0_IRQ, 1);
-	imsic_enable(APLIC_SUPERVISOR, APLIC_UART0_IRQ);
-
-	aplic_enable_irq(APLIC_SUPERVISOR, APLIC_DM_MSI, APLIC_PCIE0_IRQ, 1);
-	imsic_enable(APLIC_SUPERVISOR, APLIC_PCIE0_IRQ);
 }
 
 void putchar_(char c)

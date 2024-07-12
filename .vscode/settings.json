@@ -2,6 +2,9 @@
     "files.associations": {
         "pci.h": "c",
         "virtio-pci-rng.h": "c",
-        "virtio-pci.h": "c"
+        "virtio-pci.h": "c",
+        "virtio-pci-blk.h": "c",
+        "string.h": "c",
+        "riscv.h": "c"
     }
 }

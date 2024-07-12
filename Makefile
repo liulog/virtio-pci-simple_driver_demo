@@ -21,7 +21,7 @@ CFLAGS += -fmessage-length=0 -fstack-usage -Wstack-usage=2048
 CFLAGS += -ffunction-sections -fdata-sections
 CFLAGS += --static -nostdlib -nodefaultlibs
 CFLAGS += -fno-builtin-printf -DPRINTF_INCLUDE_CONFIG_H=1 -DD_CLOCK_RATE=10000000
-CFLAGS += -Iinclude -Isrc/cpu -Isrc/driver -Isrc/library -Isrc/platform	# 使用 CFLAGS 的 -I 包含自定义文件夹
+CFLAGS += -Iinclude -Isrc/cpu -Isrc/driver -Isrc/library -Isrc/platform			# 使用 CFLAGS 的 -I 包含自定义文件夹
 
 # 链接参数
 LDFLAGS = -nostdlib -Tqemu.lds ${ABI}
@@ -32,30 +32,30 @@ BIN_NAME	= $(BUILD_DIR)/demo
 
 # C语言源码
 SRCS = 	$(SOURCE_DIR)/main.c \
-		$(SOURCE_DIR)/driver/ns16550.c \
 		$(SOURCE_DIR)/library/printf/printf.c \
 		$(SOURCE_DIR)/cpu/trap-handler.c \
 		$(SOURCE_DIR)/platform/riscv-virt.c \
 		$(SOURCE_DIR)/platform/imsic.c \
 		$(SOURCE_DIR)/platform/aplic.c \
+		$(SOURCE_DIR)/driver/ns16550.c \
 		$(SOURCE_DIR)/driver/pcie/pci.c \
-		$(SOURCE_DIR)/driver/virtio/virtio-pci-rng.c \
 		$(SOURCE_DIR)/driver/virtio/virtio-rng.c \
 		$(SOURCE_DIR)/driver/virtio/virtio-pci.c \
-		$(SOURCE_DIR)/driver/virtio/virtio-ring.c
+		$(SOURCE_DIR)/driver/virtio/virtio-ring.c \
+		$(SOURCE_DIR)/driver/virtio/virtio-pci-rng.c \
+		$(SOURCE_DIR)/driver/virtio/virtio-pci-blk.c
 
 # 汇编源码
 ASMS = $(SOURCE_DIR)/cpu/start.S
 
 # 所有的.c 源文件名 -> s所有.o 目标文件
 OBJS = $(SRCS:%.c=$(BUILD_DIR)/%.o) $(ASMS:%.S=$(BUILD_DIR)/%.o)
-# DEPS = $(SRCS:%.c=$(BUILD_DIR)/%.d) $(ASMS:%.S=$(BUILD_DIR)/%.d)
-# -include $(DEPS)
 
 QEMU_ARGS = -nographic -machine virt,aia=aplic-imsic -net none -smp 1 \
-		-kernel ${BIN_NAME}.bin \
-		-device virtio-rng-pci,bus=pcie.0,addr=1
-
+			-kernel ${BIN_NAME}.bin \
+			-device virtio-rng-pci,bus=pcie.0,addr=1 \
+			-drive file=$(BUILD_DIR)/blk.img,if=none,format=raw,id=x0 \
+  			-device virtio-blk-pci,drive=x0,bus=pcie.0,addr=2
 
 all:
 	@echo Please use make run, make debug and make clean 
@@ -63,19 +63,12 @@ all:
 build: ${BIN_NAME}.bin
 	@echo build done!
 
-run: build # $(BUILD_DIR)/flash.img $(BUILD_DIR)/blk.img
+run: build $(BUILD_DIR)/blk.img
 	qemu-system-riscv64 $(QEMU_ARGS)
 
-# flash
-# $(BUILD_DIR)/flash.img:
-# 	@echo flash
-# 	${DD} if=/dev/zero of=$@ bs=32M count=1
-
-# block
-# $(BUILD_DIR)/blk.img:
-# 	@echo block
-# 	#${DD} if=/dev/zero of=$@ bs=64M count=1
-# 	${DD} if=/dev/urandom of=$@ bs=64M count=1
+$(BUILD_DIR)/blk.img:
+	@echo block
+	${DD} if=/dev/zero of=$@ bs=64M count=1
 
 ${BIN_NAME}.bin: ${BIN_NAME}.elf
 	@echo generate ${BIN_NAME}.bin

@@ -4,10 +4,7 @@
 #include "printf/printf.h"
 #include "aplic.h"
 #include "imsic.h"
-// #include "aclint_mtimer.h"
-// #include "virtio-blk.h"
-// #include "virtio-net.h"
-// #include "virtio-pci-net.h"
+#include "virtio/virtio-pci-blk.h"
 
 u64 g_sys_tick = 0;
 
@@ -46,20 +43,11 @@ void set_msix_handler(trap_handler_fn handler, int irq)	// 注册中断处理函
 void handle_external_trap(int mode)
 {
 	int irq = imsic_get_irq(mode);
-	if (irq == APLIC_UART0_IRQ) {
+	if (irq == APLIC_UART0_IRQ) {					// 0xA
 		UartIsr();
-	// } else if (irq == APLIC_VIRTIO1_IRQ) {
-	// 	virtio_blk_intr();
-	// } else if (irq == APLIC_VIRTIO2_IRQ) {
-	// 	virtio_net_intr();
-	// } else if (irq == APLIC_PCIE0_IRQ) {	// 0x21
-	// 	virtio_pci_net_intr(irq);
-	// } else if (irq >= APLIC_MSIX0_IRQ) {	// 0x80 以上的都是 MSI-X
-	// 	trap_handler_fn handler = gs_msix_isr[irq-APLIC_MSIX0_IRQ];	// 获取处理函数
-	// 	if (handler) handler(irq);			// 调用处理函数进行处理
-	// } else if (irq == APLIC_IPI0_IRQ) {		// IPI
-	// 	 printf("ipi: %d\n", irq);
-	// } else {
-		// printf("unknow external isr: %d\n", irq);
+	} else if (irq == APLIC_PCIE0_IRQ) {			// 0x21
+		virtio_pci_blk_intr(irq);
+	} else {
+		printf("unknow external isr: %d\n", irq);
 	}
 }

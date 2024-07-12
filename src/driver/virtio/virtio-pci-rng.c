@@ -24,7 +24,6 @@ int virtio_pci_rng_init(void)
 
 	if (pci_base) {
 		virtio_pci_read_caps(&gs_virtio_rng_hw, pci_base, gs_rng_msix_handler);
-        printf("common_cfg 's content: \n");
 		virtio_pci_print_common_cfg(&gs_virtio_rng_hw); // 此时只是探测, 还未写入
 	} else {
         printf("virtion-rng-pci device not found!\n");
@@ -32,7 +31,6 @@ int virtio_pci_rng_init(void)
     }
 
     // 以下内容主要操作 common_cfg
-
     // 1. reset device
     virtio_pci_set_status(&gs_virtio_rng_hw, 0);
 
@@ -66,7 +64,7 @@ int virtio_pci_rng_init(void)
 
     // 7. initialize queue 0.
     int qnum = 0;
-    int qsize = 8;
+    int qsize = 8;  // qsize = 8, desc 表有8个条目
 
     // ensure queue 0 is not in use.
     if (virtio_pci_get_queue_enable(&gs_virtio_rng_hw, qnum)) {
@@ -137,12 +135,13 @@ int virtio_pci_rng_read(u8 *buf, int len)
     // wait cmd done（等待设备完成）, 当设备完成后 *pt_idx 的内容会+1, 表示处理完成
     while (*pt_used_idx == *pt_idx)
         ;
+
     int rlen = rng->vr.used->ring[rng->used_idx % rng->vr.size].len;
     rng->used_idx += 1;
     return rlen;
 }
 
-// 支持 MSI-X 时使用
+// 开启 MSI-X 时, 需要提供
 int virtio_pci_rng_cfg_isr(int irq)
 {
     printf("virtio-rng cfg: %d\n", irq);
@@ -154,13 +153,3 @@ int virtio_pci_rng_intr(int irq)
     printf("virtio-rng isr: %d\n", irq);
     return 0;
 }
-
-// int virtio_pci_rng_close(void)
-// {
-//     /* Quiesce device */
-//     virtio_pci_set_status(&gs_virtio_rng_hw, VIRTIO_STAT_FAILED);
-//     // reset device
-//     virtio_pci_set_status(&gs_virtio_rng_hw, 0);
-
-//     return 0;
-// }

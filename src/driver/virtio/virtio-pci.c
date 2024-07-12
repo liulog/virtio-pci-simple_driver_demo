@@ -82,8 +82,8 @@ int virtio_pci_read_caps(virtio_pci_hw_t *hw, u64 pci_base, trap_handler_fn *msi
     u64 pos = 0;
     //struct virtio_pci_hw *hw = &g_hw;
 
-    pos = pci_config_read8(pci_base + PCI_ADDR_CAP);       // 第一个 cap 偏移
-    printf("cap: 0x%016llx\n", pci_base + PCI_ADDR_CAP);      // cap pointer 在 ECAM 整个区域中的 offset
+    pos = pci_config_read8(pci_base + PCI_ADDR_CAP);         // 第一个 cap's offset in ECAM
+    printf("cap: 0x%016llx\n", pci_base + PCI_ADDR_CAP);     // cap pointer 在 ECAM 整个区域中的 offset
 
     // 遍历所有的 capability
     while (pos) {
@@ -317,40 +317,6 @@ void virtio_pci_set_status(virtio_pci_hw_t *hw, u8 status)
     PCI_REG8(&cfg->device_status) = status;
 }
 
-int virtio_pci_negotiate_driver_features(virtio_pci_hw_t *hw, u64 features)
-{
-    int status;
-	u64 device_features = 0;
-
-	/* Negotiate features */
-	device_features = virtio_pci_get_device_features(hw);
-	if (!(device_features & VIRTIO_F_VERSION_1)) {
-		printf("Device does not support virtio 1.0 %llx\n", device_features);
-		return -1;
-	}
-
-	//if (device_features & VIRTIO_F_ACCESS_PLATFORM)
-	//	features |= VIRTIO_F_ACCESS_PLATFORM;
-
-	virtio_pci_set_driver_features(hw, features);
-	device_features = virtio_pci_get_device_features(hw);
-	if ((device_features & features) != features) {
-		printf("Features error %llx\n", features);
-		return -2;
-	}
-
-	status = virtio_pci_get_status(hw);
-	status |= VIRTIO_CONFIG_STATUS_FEATURES_OK;
-	virtio_pci_set_status(hw, status);
-
-	/* Read back to verify the FEATURES_OK bit */
-	status = virtio_pci_get_status(hw);
-	if ((status & VIRTIO_CONFIG_STATUS_FEATURES_OK) != VIRTIO_CONFIG_STATUS_FEATURES_OK)
-		return -3;
-
-	return 0;
-}
-
 void virtio_pci_print_common_cfg(virtio_pci_hw_t *hw)
 {
     volatile u32 *cap = (volatile u32 *)hw->common_cfg;
@@ -360,12 +326,14 @@ void virtio_pci_print_common_cfg(virtio_pci_hw_t *hw)
     }
 
     for (int i = 0; i < 8; ++i) {
+        // max size
         u32 qsize = virtio_pci_get_queue_size(hw, i);
         if (qsize == 0) continue;
-
+        // notify offset
         u32 notify_off = virtio_pci_get_queue_notify_off(hw, i);
+        // vring buffer total size
         u32 vsize = virtio_vring_size(qsize);
-        printf("queue[%d] qsize: 0x%08x, vsize: 0x%08x, notify_off: 0x%08x\n", i, qsize, vsize, notify_off);
+        printf("queue[%d] qsize: %d, vsize: 0x%x, notify_off: 0x%08x\n", i, qsize, vsize, notify_off);
     }
     // 获取 device 支持的 features
     u64 features = virtio_pci_get_device_features(hw);
