@@ -53,17 +53,16 @@ OBJS = $(SRCS:%.c=$(BUILD_DIR)/%.o) $(ASMS:%.S=$(BUILD_DIR)/%.o)
 
 QEMU_ARGS = -nographic -machine virt,aia=aplic-imsic -net none -smp 1 \
 			-kernel ${BIN_NAME}.bin \
-			-device virtio-rng-pci,bus=pcie.0,addr=1 \
 			-drive file=$(BUILD_DIR)/blk.img,if=none,format=raw,id=x0 \
-  			-device virtio-blk-pci,drive=x0,bus=pcie.0,addr=2
+  			-device virtio-blk-pci,drive=x0,bus=pcie.0,addr=1
 
 all:
 	@echo Please use make run, make debug and make clean 
 
-build: ${BIN_NAME}.bin
+build: ${BIN_NAME}.bin $(BUILD_DIR)/blk.img
 	@echo build done!
 
-run: build $(BUILD_DIR)/blk.img
+run: build
 	qemu-system-riscv64 $(QEMU_ARGS)
 
 $(BUILD_DIR)/blk.img:

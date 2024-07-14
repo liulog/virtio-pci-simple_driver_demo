@@ -319,19 +319,20 @@ void virtio_pci_set_status(virtio_pci_hw_t *hw, u8 status)
 
 void virtio_pci_print_common_cfg(virtio_pci_hw_t *hw)
 {
-    volatile u32 *cap = (volatile u32 *)hw->common_cfg;
+    // volatile u32 *cap = (volatile u32 *)hw->common_cfg;
     // 打印 comman cfg 的内容
-    for (int i = 0; i < sizeof(struct virtio_pci_common_cfg)/sizeof(u32); ++i) {
-        printf("cap[%d]: 0x%08x\n", i, cap[i]);
-    }
+    // for (int i = 0; i < sizeof(struct virtio_pci_common_cfg)/sizeof(u32); ++i) {
+    //     printf("cap[%d]: 0x%08x\n", i, cap[i]);
+    // }
 
     for (int i = 0; i < 8; ++i) {
-        // max size
+        // 每个队列支持的 max size
         u32 qsize = virtio_pci_get_queue_size(hw, i);
+        // 若队列支持的大小为 0, 则跳过
         if (qsize == 0) continue;
         // notify offset
         u32 notify_off = virtio_pci_get_queue_notify_off(hw, i);
-        // vring buffer total size
+        // vring buffer total size, 根据 qsize 计算需要的 buffer size, notify_offset
         u32 vsize = virtio_vring_size(qsize);
         printf("queue[%d] qsize: %d, vsize: 0x%x, notify_off: 0x%08x\n", i, qsize, vsize, notify_off);
     }

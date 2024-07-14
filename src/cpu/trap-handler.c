@@ -10,6 +10,7 @@ u64 g_sys_tick = 0;
 
 u64 handle_trap(u64 scause, u64 sepc)
 {
+	printf("handle_trap\n");
 	int is_interrupt = (int)(scause >> 63) & 0x00000001;
 	scause = scause & 0xFF;
 	if (is_interrupt) {

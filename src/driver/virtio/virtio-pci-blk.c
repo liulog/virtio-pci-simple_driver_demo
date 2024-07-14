@@ -27,7 +27,7 @@ int virtio_pci_blk_init(void)
     // 获取 PCI 设备的能力信息, 遍历 Capability List (其中 common config 很重要)
     if (pci_base) {
 		virtio_pci_read_caps(&gs_virtio_blk_hw, pci_base, gs_blk_msix_handler);
-		virtio_pci_print_common_cfg(&gs_virtio_blk_hw);
+		// virtio_pci_print_common_cfg(&gs_virtio_blk_hw);
 	} else {
         printf("virtion-blk-pci device not found!\n");
         return -1;
@@ -102,12 +102,11 @@ int virtio_pci_blk_init(void)
     // 根据 vring 等初始化的内容进行配置
     // (1) set queue size.
     virtio_pci_set_queue_size(&gs_virtio_blk_hw, qnum, qsize);
-    // enable msix
+    // (2) disable msix / enable msix
     // virtio_pci_set_config_msix(&gs_virtio_blk_hw, 0);
     // virtio_pci_set_queue_msix(&gs_virtio_blk_hw, qnum, 1);
-    // (2) disable msix
-    virtio_pci_disable_config_msix(&gs_virtio_blk_hw);              // config 需要一个中断
-    virtio_pci_disable_queue_msix(&gs_virtio_blk_hw, qnum);         // 每个 virtqueue 需要一个中断
+    // virtio_pci_disable_config_msix(&gs_virtio_blk_hw);              // config 需要一个中断
+    // virtio_pci_disable_queue_msix(&gs_virtio_blk_hw, qnum);         // 每个 virtqueue 需要一个中断
     // (3) write physical addresses.
     virtio_pci_set_queue_addr(&gs_virtio_blk_hw, qnum, &gs_virtio_blk.vr);
     // (4) queue is ready.
@@ -117,13 +116,12 @@ int virtio_pci_blk_init(void)
     status |= VIRTIO_STAT_DRIVER_OK;
     virtio_pci_set_status(&gs_virtio_blk_hw, status);
 
-    // 从 device_cfg 中读取信息(read-only)
+    // 从 device_config
     virtio_pci_blk_cfg();
 
     // 开启中断
 	aplic_enable_irq(APLIC_SUPERVISOR, APLIC_DM_MSI, APLIC_PCIE0_IRQ, 1);
 	imsic_enable(APLIC_SUPERVISOR, APLIC_PCIE0_IRQ);
-
     return 0;
 }
 
@@ -155,6 +153,7 @@ void virtio_pci_blk_rw(struct blk_buf *b)
         return;
     }
 
+    // 实际上这里是描述符表的索引 avail_idx
     for (int i = 0; i < 3; ++i) {
         idx[i] = blk->avail_idx++ % blk->vr.size;
     }
@@ -169,34 +168,36 @@ void virtio_pci_blk_rw(struct blk_buf *b)
     virtio_vring_fill_desc(blk->vr.desc + idx[0], (u64)req, sizeof(struct virtio_blk_req),
             VRING_DESC_F_NEXT, idx[1]);
     // (2) fill descriptor: blk data
-    virtio_vring_fill_desc(blk->vr.desc + idx[1], (u64)b->data, b->data_len,
+    virtio_vring_fill_desc(blk->vr.desc + idx[1], (u64)(b->data), b->data_len,
             (b->is_write ? 0 : VRING_DESC_F_WRITE) | VRING_DESC_F_NEXT, idx[2]);
     // (3) fill descriptor: blk request status
     blk->status[idx[0]] = 0xff;                                     // device writes 0 on success
-    virtio_vring_fill_desc(blk->vr.desc + idx[2], (u64)&blk->status[idx[0]], 1,
+    virtio_vring_fill_desc(blk->vr.desc + idx[2], (u64)(&blk->status[idx[0]]), 1,
             VRING_DESC_F_WRITE, 0);
 
     // set blk flag
     b->flag = 1;
     blk->info[idx[0]] = b;              // 一次传输
 
+    // 写入 avail_ring, 指向第一个描述符
     virtio_vring_add_avail(blk->vr.avail, idx[0], blk->vr.size);
     virtio_pci_set_queue_notify(&gs_virtio_blk_hw, qnum);
 
-    //disable_irq();
-    printf("virtio_blk_rw waiting, b: %p ...\n", b);
-    //enable_irq();
+    // printf("virtio_blk_rw waiting, b: %p ...\n", b);
+
+    // 方式1: 使用中断通知的方式, 判断设备是否写入完成
     // volatile u16 *pflag = &b->flag;
     // wait cmd done, 等待设备写入
     // while (*pflag == 1) ;
 
+    // 方式2: 获取 used ring idx, 判断 blk 设备是否写入完成
     volatile u16 *pt_used_idx = &blk->used_idx;
     volatile u16 *pt_idx = &blk->vr.used->idx;
     // wait cmd done
-    while (*pt_used_idx == *pt_idx)
-        ;
-
+    while (*pt_used_idx == *pt_idx) ;
     blk->used_idx += 1;
+
+
     blk->info[idx[0]] = NULL;           // 完成一次
 }
 
@@ -224,7 +225,7 @@ int virtio_pci_blk_intr(int irq)
 
         struct blk_buf *b = blk->info[id];
         //printf("virtio_blk_intr b: %p\n", b);
-        b->flag = 0;   // blk is done
+        b->flag = 0;                    // blk is done -> 用来激活 virtio_blk_rw 中的等待
         blk->used_idx += 1;
         dsb();
         //printf("virtio_blk_intr b->flag: %d\n", b->flag);

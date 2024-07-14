@@ -29,11 +29,12 @@ int main( void )
 
 
 	// pci_rng_test
-	printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
-	printf("virtio pci rng test:\n");
-	virtio_pci_rng_test();
+	// printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+	// printf("virtio pci rng test:\n");
+	// virtio_pci_rng_test();
 	printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
 	printf("virtio pci blk test:\n");
+
 	// pci_blk_test
 	virtio_pci_blk_test();
 	printf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
