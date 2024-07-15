@@ -35,15 +35,16 @@ SRCS = 	$(SOURCE_DIR)/main.c \
 		$(SOURCE_DIR)/library/printf/printf.c \
 		$(SOURCE_DIR)/cpu/trap-handler.c \
 		$(SOURCE_DIR)/platform/riscv-virt.c \
-		$(SOURCE_DIR)/platform/imsic.c \
-		$(SOURCE_DIR)/platform/aplic.c \
 		$(SOURCE_DIR)/driver/ns16550.c \
 		$(SOURCE_DIR)/driver/pcie/pci.c \
 		$(SOURCE_DIR)/driver/virtio/virtio-rng.c \
 		$(SOURCE_DIR)/driver/virtio/virtio-pci.c \
 		$(SOURCE_DIR)/driver/virtio/virtio-ring.c \
 		$(SOURCE_DIR)/driver/virtio/virtio-pci-rng.c \
-		$(SOURCE_DIR)/driver/virtio/virtio-pci-blk.c
+		$(SOURCE_DIR)/driver/virtio/virtio-pci-blk.c \
+		$(SOURCE_DIR)/platform/plic.c
+# $(SOURCE_DIR)/platform/imsic.c \
+# $(SOURCE_DIR)/platform/aplic.c \
 
 # 汇编源码
 ASMS = $(SOURCE_DIR)/cpu/start.S
@@ -51,7 +52,12 @@ ASMS = $(SOURCE_DIR)/cpu/start.S
 # 所有的.c 源文件名 -> s所有.o 目标文件
 OBJS = $(SRCS:%.c=$(BUILD_DIR)/%.o) $(ASMS:%.S=$(BUILD_DIR)/%.o)
 
-QEMU_ARGS = -nographic -machine virt,aia=aplic-imsic -net none -smp 1 \
+# QEMU_ARGS = -nographic -machine virt,aia=aplic-imsic -net none -smp 1 \
+			# -kernel ${BIN_NAME}.bin \
+			# -drive file=$(BUILD_DIR)/blk.img,if=none,format=raw,id=x0 \
+  			# -device virtio-blk-pci,drive=x0,bus=pcie.0,addr=1
+
+QEMU_ARGS = -nographic -machine virt -smp 1 \
 			-kernel ${BIN_NAME}.bin \
 			-drive file=$(BUILD_DIR)/blk.img,if=none,format=raw,id=x0 \
   			-device virtio-blk-pci,drive=x0,bus=pcie.0,addr=1
@@ -65,9 +71,13 @@ build: ${BIN_NAME}.bin $(BUILD_DIR)/blk.img
 run: build
 	qemu-system-riscv64 $(QEMU_ARGS)
 
+block: $(BUILD_DIR)/blk.img
+	@echo "generate block"
+	${DD} if=/dev/urandom of=$< bs=64M count=1
+
 $(BUILD_DIR)/blk.img:
 	@echo block
-	${DD} if=/dev/zero of=$@ bs=64M count=1
+	${DD} if=/dev/urandom of=$@ bs=64M count=1
 
 ${BIN_NAME}.bin: ${BIN_NAME}.elf
 	@echo generate ${BIN_NAME}.bin

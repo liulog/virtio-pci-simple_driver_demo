@@ -1,7 +1,8 @@
 #include "riscv.h"
 #include "trap-handler.h"
-#include "aplic.h"
-#include "imsic.h"
+// #include "aplic.h"
+// #include "imsic.h"
+#include "plic.h"
 #include "pcie/pci.h"
 #include "virtio.h"
 #include "virtio-ring.h"
@@ -120,8 +121,9 @@ int virtio_pci_blk_init(void)
     virtio_pci_blk_cfg();
 
     // 开启中断
-	aplic_enable_irq(APLIC_SUPERVISOR, APLIC_DM_MSI, APLIC_PCIE0_IRQ, 1);
-	imsic_enable(APLIC_SUPERVISOR, APLIC_PCIE0_IRQ);
+	// aplic_enable_irq(APLIC_SUPERVISOR, APLIC_DM_MSI, APLIC_PCIE0_IRQ, 1);
+	// imsic_enable(APLIC_SUPERVISOR, APLIC_PCIE0_IRQ);
+    plic_enable(PCIE_IRQ);
     return 0;
 }
 
@@ -185,18 +187,18 @@ void virtio_pci_blk_rw(struct blk_buf *b)
 
     // printf("virtio_blk_rw waiting, b: %p ...\n", b);
 
-    // 方式1: 使用中断通知的方式, 判断设备是否写入完成
-    // volatile u16 *pflag = &b->flag;
+    // 方式1: PLIC 使用中断通知的方式, 判断设备是否写入完成
+    volatile u16 *pflag = &b->flag;
     // wait cmd done, 等待设备写入
-    // while (*pflag == 1) ;
+    while (*pflag == 1) ;
 
+    // 注: APLIC+IMSIC 中断有问题, 使用这种方式可以
     // 方式2: 获取 used ring idx, 判断 blk 设备是否写入完成
-    volatile u16 *pt_used_idx = &blk->used_idx;
-    volatile u16 *pt_idx = &blk->vr.used->idx;
+    // volatile u16 *pt_used_idx = &blk->used_idx;
+    // volatile u16 *pt_idx = &blk->vr.used->idx;
     // wait cmd done
-    while (*pt_used_idx == *pt_idx) ;
-    blk->used_idx += 1;
-
+    // while (*pt_used_idx == *pt_idx) ;
+    // blk->used_idx += 1;
 
     blk->info[idx[0]] = NULL;           // 完成一次
 }
@@ -210,7 +212,6 @@ int virtio_pci_blk_cfg_isr(int irq)
 int virtio_pci_blk_intr(int irq)
 {
     struct virtio_blk *blk = &gs_virtio_blk;
-    // printf("virtio-blk isr: %d\n", irq);
 
     // 21 号中断直接会到达
     virtio_pci_clear_isr(&gs_virtio_blk_hw);

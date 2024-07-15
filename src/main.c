@@ -1,8 +1,9 @@
 #include "riscv.h"
 #include "riscv-virt.h"
 #include "printf/printf.h"
-#include "aplic.h"
-#include "imsic.h"
+// #include "aplic.h"
+// #include "imsic.h"
+// #include "plic.h"
 #include "ns16550.h"
 #include "pcie/pci.h"
 #include "virtio/virtio-pci-rng.h"
@@ -11,6 +12,7 @@
 
 void virtio_pci_rng_test(void);
 void virtio_pci_blk_test(void);
+void virtio_pci_blk_test2(void);
 
 int version = 20240711;
 char *hello = "Hello, qemu and risc-v!";
@@ -24,9 +26,7 @@ int main( void )
 	printf("  version is: %d\n", version);
 	printf("  %s\n", hello);
 	printf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
-
 	printf("\n	Begin Test:\n\n");
-
 
 	// pci_rng_test
 	// printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
@@ -36,11 +36,15 @@ int main( void )
 	printf("virtio pci blk test:\n");
 
 	// pci_blk_test
-	virtio_pci_blk_test();
+	// virtio_pci_blk_test();
 	printf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
-	printf("All tests done!\n");
-	while(1) ;
 	
+	virtio_pci_blk_test2();
+
+	printf("\nAll tests done!\n");
+	
+	while(1) {};
+
 	return 0;
 }
 
@@ -93,16 +97,15 @@ void virtio_pci_blk_test(void)
 		req.data_len = dlen;				// buffer len
 		req.is_write = 1;					// 向磁盘写入
 		virtio_pci_blk_rw(&req);
-
+		
 		memset(buf, 0, dlen);
 
 		// blk read
-		req.addr = 0;						// blk read addr
+		req.addr = n * dlen;				// blk read addr
 		req.data = buf;						// buffer addr
 		req.data_len = dlen;				// buffer len
 		req.is_write = 0;					// 从磁盘读取
 		virtio_pci_blk_rw(&req);
-
 		// check read data
 		for (int j = 0; j < dlen; ++j) {
 			if (buf[j] != (u8)j) {
@@ -112,5 +115,32 @@ void virtio_pci_blk_test(void)
 			}
 		}
 	}
+
 	printf("passed!\n");
+}
+
+#define TEST_LEN SECTOR_SZIE
+void virtio_pci_blk_test2(){
+	int r = virtio_pci_blk_init();	// 注意: 不要重复初始化!
+	printf("r: %d\n", r);
+
+	u8 buf[TEST_LEN] = { 0 };
+	int dlen = TEST_LEN;
+	memset(buf, 0, dlen);
+
+	struct blk_buf req = { 0 };
+
+	// blk read
+	req.addr = 0;						// blk read addr
+	req.data = buf;						// buffer addr
+	req.data_len = dlen;				// buffer len
+	req.is_write = 0;					// 从磁盘读取
+
+	virtio_pci_blk_rw(&req);
+	
+	// check read data
+	for (int j = 0; j < dlen; ++j) {
+		if(j % 16 == 0) printf("\n");
+        printf("%02x\t", buf[j]);
+    }
 }
