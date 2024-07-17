@@ -22,7 +22,7 @@ void plt_virt_init(void)
 
 void interrupts_init(void){
 	// interrupts arch init
-	set_csr(sie, SIE_STIE | SIE_SSIE | SIE_SEIE);		// sie 打开
+	set_csr(sie, SIE_SEIE);		// sie 打开
 	set_csr(sstatus, SSTATUS_SIE);						// sstatus 打开
 
 	plic_init();										// 使能了 IRQ

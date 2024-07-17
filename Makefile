@@ -57,10 +57,10 @@ OBJS = $(SRCS:%.c=$(BUILD_DIR)/%.o) $(ASMS:%.S=$(BUILD_DIR)/%.o)
 			# -drive file=$(BUILD_DIR)/blk.img,if=none,format=raw,id=x0 \
   			# -device virtio-blk-pci,drive=x0,bus=pcie.0,addr=1
 
-QEMU_ARGS = -nographic -machine virt -smp 1 \
+QEMU_ARGS = -nographic -machine virt -smp 1 -m 16M \
 			-kernel ${BIN_NAME}.bin \
 			-drive file=$(BUILD_DIR)/blk.img,if=none,format=raw,id=x0 \
-  			-device virtio-blk-pci,drive=x0,bus=pcie.0,addr=1
+  			-device virtio-blk-pci,drive=x0,bus=pcie.0,addr=1,disable-legacy=on,disable-modern=off
 
 all:
 	@echo Please use make run, make debug and make clean 

@@ -15,6 +15,8 @@ u64 handle_trap(u64 scause, u64 sepc)
 	scause = scause & 0xFF;
 	if (is_interrupt) {
 		switch (scause) {
+		case IRQ_S_TIMER:
+			break;
 		case IRQ_S_EXT: 		// 仅处理外部中断
 			handle_external_trap();
 			break;

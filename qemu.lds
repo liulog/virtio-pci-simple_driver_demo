@@ -5,7 +5,7 @@ PROVIDE(__stack_size = 64K);    /* 定义一个名为 __stack_size 的符号, �
 
 SECTIONS
 {
-	. = 0x80200000;
+	. = 0x90000000;
 	.boot :
 	{
 		*(.boot)

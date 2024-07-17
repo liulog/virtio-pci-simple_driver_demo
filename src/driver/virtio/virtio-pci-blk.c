@@ -23,7 +23,7 @@ static trap_handler_fn gs_blk_msix_handler[] = {
 int virtio_pci_blk_init(void)
 {
     // 在 PCI 总线上 探测设备
-    u64 pci_base = pci_device_probe(0x1af4, 0x1001);
+    u64 pci_base = pci_device_probe(0x1af4, 0x1042);
 	
     // 获取 PCI 设备的能力信息, 遍历 Capability List (其中 common config 很重要)
     if (pci_base) {
