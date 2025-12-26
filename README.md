@@ -1,18 +1,26 @@
 # virtio-pci-simple_driver_demo
 
+这是一个简单的逻辑程序 Demo, 进行 virtio-pci 的简单驱动实现, 用于学习 virtio 相关机制.
 
-qemu 本地运行：
+它是一个 RISC-V 64bits 的程序, 运行在 S-mode.
+
+#### 编译&运行环境
+
+- riscv64-unknown-elf-xx
+- qemu-system-riscv64
+
+#### Quick start：
 
 ```
 make run
 ```
 
-gdb 调试：
+gdb debug：
 
 ```
 make debug
 ```
 
-需要配置的地方：
+### 参考
 
-- qemu.lds 中执行的地址, qemu 中需要改为 0x80200000（根据实际情况进行修改）
+https://github.com/oldawei/show_me_the_code

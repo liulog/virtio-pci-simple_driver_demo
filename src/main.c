@@ -21,6 +21,17 @@ char *hello = "Hello, qemu and risc-v!";
 
 static u8 read_buf[DATA_LEN] = { 0 };
 
+typedef unsigned int uint32_t;
+#define SIFIVE_TEST_FINISH_ADDR 0x100000UL
+#define mb() __asm__ volatile ("fence" ::: "memory")
+void shutdown(int exit_code) {
+    volatile uint32_t *test_finish = (volatile uint32_t *)SIFIVE_TEST_FINISH_ADDR;
+    uint32_t code = (exit_code == 0) ? 0x5555U : 0x3333U;
+    *test_finish = code;
+    mb();
+    while (1);
+}
+
 int main( void )
 {	
 	// 初始化平台设备 (包含uart & plic)
@@ -47,7 +58,7 @@ int main( void )
 
 	printf("\nAll tests done!\n");
 	
-	while(1) {};
+    shutdown(0);
 
 	return 0;
 }
