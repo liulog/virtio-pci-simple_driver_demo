@@ -22,15 +22,24 @@ void plt_virt_init(void)
 
 void interrupts_init(void){
 	// interrupts arch init
-	set_csr(sie, SIE_SEIE);		// sie 打开
-	set_csr(sstatus, SSTATUS_SIE);						// sstatus 打开
+	set_csr(sie, SIE_SEIE); // Enable external interrupt
+	set_csr(sstatus, SSTATUS_SIE); // Enable global interrupt, allow interrupts when in S-mode
 
-	plic_init();										// 使能了 IRQ
+	plic_init(); // Initial PLIC, enable uart irq
 	// imsic_init();
-	// aplic_init(APLIC_DM_MSI); 						// msix mode, 选择 MSI-Mode
+	// aplic_init(APLIC_DM_MSI);
 }
 
 void putchar_(char c)
 {
 	UartPutc( c );
+}
+
+
+void shutdown(int exit_code) {
+    volatile uint32_t *test_finish = (volatile uint32_t *)SIFIVE_TEST_FINISH_ADDR;
+    uint32_t code = (exit_code == 0) ? 0x5555U : 0x3333U;
+    *test_finish = code;
+    mb();
+    while (1);
 }

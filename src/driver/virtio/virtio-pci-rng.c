@@ -15,12 +15,13 @@ static virtio_pci_hw_t gs_virtio_rng_hw = { 0 };
 static struct virtio_rng gs_virtio_rng = { 0 };
 static trap_handler_fn gs_rng_msix_handler[] = {
     virtio_pci_rng_cfg_isr,
-    virtio_pci_rng_intr };
+    virtio_pci_rng_intr 
+};
 
 int virtio_pci_rng_init(void)
 {
-    // 探测设备
-    u64 pci_base = pci_device_probe(0x1af4, 0x1005);
+    // Probe where the device is (according to vendor id and device id).
+    u64 pci_base = pci_device_probe(0x1af4, 0x1044);
 
 	if (pci_base) {
 		virtio_pci_read_caps(&gs_virtio_rng_hw, pci_base, gs_rng_msix_handler);

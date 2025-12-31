@@ -53,4 +53,6 @@ u64 pci_device_probe(u16 vendor_id, u16 device_id);
 void pci_set_msix(struct pci_msix *msix, u32 pci_base, u32 pos, trap_handler_fn *msix_isr);
 u32 pci_alloc_irq_number(void);
 u64 pci_alloc_mmio(u64 sz);
+u64 pci_alloc_mmio_prefetch(u64 sz);
+
 #endif /* PCI_H_ */

@@ -35,5 +35,6 @@
   __tmp; })
 
 #define dsb()           __asm volatile( "fence" )
+#define mb() __asm__ volatile ("fence" ::: "memory")
 
 #endif //RISCV_H_

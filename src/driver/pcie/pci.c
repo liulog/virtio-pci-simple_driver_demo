@@ -62,6 +62,9 @@ u64 pci_device_probe(u16 vendor_id, u16 device_id)
     u32 pci_id = (((u32)device_id) << 16) | vendor_id;
     u64 ret = 0;
 
+    // Note: this is just a simple implementation, only scan function 0
+    //  and can't handle pci bridge (like pcie switch) correctly.
+    // For current riscv-virt platform, it's enough.
     for (int bus = 0; bus < 255; bus++) {
         for (int dev = 0; dev < 32; dev++) {
             int func = 0;
@@ -81,52 +84,71 @@ u64 pci_device_probe(u16 vendor_id, u16 device_id)
             base[1] = 7;
             __sync_synchronize();
 
-            // u8 flag = 0;    // 用来检测是否是 64bit
+            // u8 flag = 0;
             // int spaceid = 0;
             // int addrbit = 0;
             for(int i = 0; i < 6; i++) {
                 u32 old = base[4+i];
+                u32 prefetchable = (old & 0x8) == 0x8;
                 printf("bar%d origin value: 0x%08x\t", i, old);
+                if(prefetchable) {
+                    printf("prefetchable\t");
+                } else {
+                    printf("non-prefetchable\t");
+                }
                 if(old & 0x1) {
                     printf("IO space\n");
-                    continue;                                      // 未用到 IO 空间, 暂时也不进行分配等
-                } else {                                           // 仅为 Mem 空间进行进一步的处理
+                    continue;
+                } else {
                     printf("Mem space\t");
                 }
                 if(old & 0x4) {
-                    printf("64 bit with BAR%d\n", i+1);             // 64bit 系统映射
+                    printf("64 bit with BAR%d\n", i+1);
                     base[4+i] = 0xffffffff;
                     base[4+i+1] = 0xffffffff;
                     __sync_synchronize();
 
                     u64 sz = ((u64)base[4+i+1] << 32) | base[4+i];
                     sz = ~(sz & 0xFFFFFFFFFFFFFFF0) + 1;
+                    if (sz == 0) { i++; continue; }
+
                     printf("bar%d need size: 0x%016llx\n", i, sz);
-                    u64 mem_addr = pci_alloc_mmio(sz);
-                    // 写入分配的大小
+                    // Alloc MMIO space for device (just like mmio control registers, but more flexible)
+                    u64 mem_addr = 0;
+                    if (prefetchable) {
+                        mem_addr = pci_alloc_mmio_prefetch(sz);
+                    } else {
+                        mem_addr = pci_alloc_mmio(sz);
+                    }
                     base[4+i] = (u32)(mem_addr);
                     base[4+i+1] = (u32)(mem_addr >> 32);
                     printf("bar%d mem_addr: 0x%016llx\n", i, mem_addr);
-                    i++;                                    // 跳过下一个 BAR
+                    i++;
                 } else {
                     printf("32 bit\n");
                     // writing all 1's to the BAR causes it to be
                     // replaced with its size.
-                    // base[4+i] = 0xffffffff;
-                    // __sync_synchronize();
+                    base[4+i] = 0xffffffff;
+                    __sync_synchronize();
 
-                    // u32 sz = base[4+i];
-                    // sz = ~(sz & 0xFFFFFFF0) + 1;
-                    // printf("bar%d need size: 0x%08x\n", i, sz);
-                    // base[4+i] = (u32)pci_alloc_mmio((u64)sz);
-                    // printf("bar%d mem_addr: 0x%016llx\n", i, (u64)base[4+i]);
+                    u32 sz = base[4+i];
+                    sz = ~(sz & 0xFFFFFFF0) + 1;
+                    if (sz == 0) { continue; }
+
+                    printf("bar%d need size: 0x%08x\n", i, sz);
+                    if (prefetchable) {
+                        base[4+i] = (u32)pci_alloc_mmio_prefetch((u64)sz);
+                    } else {
+                        base[4+i] = (u32)pci_alloc_mmio((u64)sz);
+                    }
+                    printf("bar%d mem_addr: 0x%016llx\n", i, (u64)base[4+i]);
                 }
             }
         }
     }
     printf("vendor_id: 0x%08x\n", vendor_id);
     printf("device_id: 0x%08x\n", device_id);
-    printf("bar_addr : 0x%016llx\n", ret);          // ECAM 中的 offset
+    printf("ecam_offset: 0x%016llx\n", ret);
     return ret;
 }
 
@@ -199,7 +221,6 @@ u64 pci_device_probe(u16 vendor_id, u16 device_id)
 //     }
 // }
 
-// 分配 irq num
 u32 pci_alloc_irq_number(void)
 {
     static u32 n_off = 0;   // Static 从 0x80 开始分配 irq num
@@ -212,10 +233,18 @@ u32 pci_alloc_irq_number(void)
 #define PAGE_ALIGN(sz)	((((u64)sz) + 0x0fff) & ~0x0fff)
 u64 pci_alloc_mmio(u64 sz)
 {
-    static u64 s_off = 0;           // static 变量, 共用一个
-    // MMIO 区域 + s_off
+    static u64 s_off = 0;
     u64 addr = PCIE0_MMIO + s_off;
-    s_off += PAGE_ALIGN(sz);        // 按页 4k 对齐
+    s_off += PAGE_ALIGN(sz);
+    // printf("addr: 0x%016llx, 0x%016llx\n", addr, s_off);
+    return addr;
+}
+
+u64 pci_alloc_mmio_prefetch(u64 sz)
+{
+    static u64 s_prefetch_off = 0;
+    u64 addr = PCIE0_PREFETCH_ADDR + s_prefetch_off;
+    s_prefetch_off += PAGE_ALIGN(sz);
     // printf("addr: 0x%016llx, 0x%016llx\n", addr, s_off);
     return addr;
 }

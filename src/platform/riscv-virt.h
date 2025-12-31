@@ -17,8 +17,11 @@
 #define IMSIC0_S_ADDR       0x28000000UL
 #define PCIE0_ECAM          0x30000000UL
 #define PCIE0_MMIO          0x40000000UL
+#define PCIE0_PREFETCH_ADDR 0x400000000UL
+#define SIFIVE_TEST_FINISH_ADDR 0x100000UL
 
 void interrupts_init(void);
 void plt_virt_init(void);
+void shutdown(int);
 
 #endif /* RISCV_VIRT_H_ */

@@ -10,43 +10,33 @@
 #include "virtio/virtio-pci-blk.h"
 #include <string.h>
 
+#define DATA_LEN	(SECTOR_SZIE * 2)
+#define TEST_CNT  	(16)    // (64*1024*1024/DATA_LEN)
+
 void virtio_pci_rng_test(void);
 void virtio_pci_blk_test(void);
 void virtio_pci_blk_test2(void);
 
-int version = 20240711;
+// Information
+int version = 20251231;
 char *hello = "Hello, qemu and risc-v!";
-#define DATA_LEN	(SECTOR_SZIE * 2)
-#define TEST_CNT  	(16) 				// (64*1024*1024/DATA_LEN)
-
+// Virtio-blk test data buffer
 static u8 read_buf[DATA_LEN] = { 0 };
 
-typedef unsigned int uint32_t;
-#define SIFIVE_TEST_FINISH_ADDR 0x100000UL
-#define mb() __asm__ volatile ("fence" ::: "memory")
-void shutdown(int exit_code) {
-    volatile uint32_t *test_finish = (volatile uint32_t *)SIFIVE_TEST_FINISH_ADDR;
-    uint32_t code = (exit_code == 0) ? 0x5555U : 0x3333U;
-    *test_finish = code;
-    mb();
-    while (1);
-}
-
-int main( void )
-{	
-	// 初始化平台设备 (包含uart & plic)
+int main(void)
+{
 	plt_virt_init();
 
-	printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+	printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n");
 	printf("  version is: %d\n", version);
-	printf("  %s\n", hello);
+	printf("  %s\n\n", hello);
 	printf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
 	printf("\n	Begin Test:\n\n");
 
 	// pci_rng_test
-	// printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
-	// printf("virtio pci rng test:\n");
-	// virtio_pci_rng_test();
+	printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+	printf("virtio pci rng test:\n");
+	virtio_pci_rng_test();
 	printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
 	printf("virtio pci blk test:\n");
 
@@ -65,6 +55,7 @@ int main( void )
 
 void virtio_pci_rng_test(void)
 {
+    // Initialize the virtio-pci-rng device
 	int r = virtio_pci_rng_init();
 	printf("r: %d\n", r);
 	u64 buf[4] = { 0 };
