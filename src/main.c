@@ -73,7 +73,7 @@ void virtio_pci_rng_test(void)
 	printf("virtio-pci-rng test passed!\n");
 }
 
-void *memset(void *s, int c, size_t n) {				// 注: #include <string.h> 用不了, 暂未知
+void *memset(void *s, int c, size_t n) {
     unsigned char *p = s;
     while (n--) {
         *p++ = (unsigned char)c;

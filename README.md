@@ -4,22 +4,33 @@
 
 它是一个 RISC-V 64bits 的程序, 运行在 S-mode.
 
-#### 编译&运行环境
+### 编译&运行环境
 
 - riscv64-unknown-elf-xx
 - qemu-system-riscv64
 
-#### Quick start：
+### Quick start
 
 ```
 make run
 ```
 
-gdb debug：
+### debug
 
 ```
 make debug
 ```
+
+### virtio-pci-rng
+
+```c
+    // driver doesn't support event idx, used for optimization about notification
+    features &= ~(1 << VIRTIO_F_EVENT_IDX);
+    // driver doesn't support indirect desc
+    features &= ~(1 << VIRTIO_F_INDIRECT_DESC);
+```
+
+代码中为一个轮询的版本, 并未提供以上 features 的支持
 
 ### 参考
 

@@ -28,7 +28,7 @@ int virtio_pci_blk_init(void)
     // 获取 PCI 设备的能力信息, 遍历 Capability List (其中 common config 很重要)
     if (pci_base) {
 		virtio_pci_read_caps(&gs_virtio_blk_hw, pci_base, gs_blk_msix_handler);
-		// virtio_pci_print_common_cfg(&gs_virtio_blk_hw);
+		virtio_pci_print_common_cfg(&gs_virtio_blk_hw);
 	} else {
         printf("virtion-blk-pci device not found!\n");
         return -1;

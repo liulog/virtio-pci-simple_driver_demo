@@ -281,6 +281,7 @@ void virtio_pci_disable_queue_msix(virtio_pci_hw_t *hw, int qid)
     PCI_REG16(&cfg->queue_select) = qid;
     dsb();
 
+    // The driver uses this to specify the queue vector for MSI-X.
     PCI_REG16(&cfg->queue_msix_vector) = 0xffff;
 }
 
@@ -333,26 +334,29 @@ void virtio_pci_set_status(virtio_pci_hw_t *hw, u8 status)
 
 void virtio_pci_print_common_cfg(virtio_pci_hw_t *hw)
 {
-    // volatile u32 *cap = (volatile u32 *)hw->common_cfg;
-    // 打印 comman cfg 的内容
-    // for (int i = 0; i < sizeof(struct virtio_pci_common_cfg)/sizeof(u32); ++i) {
-    //     printf("cap[%d]: 0x%08x\n", i, cap[i]);
-    // }
+    // Print common cfg registers
+    volatile u32 *cap = (volatile u32 *)hw->common_cfg;
+    printf("virtio pci common cfg:\n");
+    for (int i = 0; i < sizeof(struct virtio_pci_common_cfg)/sizeof(u32); ++i) {
+        printf("\tcap[%d]: 0x%08x\n", i, cap[i]);
+    }
 
+    // TODO: here needs to get num_queues from common_cfg
     for (int i = 0; i < 8; ++i) {
-        // 每个队列支持的 max size
+        // queue_select = i: the driver selects which virtqueu the following fileds refer to.
+        // queue size: specifies the maximum queue size supported by the device
         u32 qsize = virtio_pci_get_queue_size(hw, i);
-        // 若队列支持的大小为 0, 则跳过
+        // qsize == 0 means the queue is unavailable
         if (qsize == 0) continue;
-        // notify offset
+        // queue_notify_off: driver read this to calculate the offset from start of notify structure
         u32 notify_off = virtio_pci_get_queue_notify_off(hw, i);
-        // vring buffer total size, 根据 qsize 计算需要的 buffer size, notify_offset
+        // vring buffer total size(descriptors + avail + used), here is 0x3000, 4kB aligned
         u32 vsize = virtio_vring_size(qsize);
         printf("queue[%d] qsize: %d, vsize: 0x%x, notify_off: 0x%08x\n", i, qsize, vsize, notify_off);
     }
-    // 获取 device 支持的 features
-    u64 features = virtio_pci_get_device_features(hw);
-    printf("features: 0x%016llx\n", features);
+    // Print device features
+    // u64 features = virtio_pci_get_device_features(hw);
+    // printf("features: 0x%016llx\n", features); // will print later
 }
 
 int virtio_pci_setup_queue(virtio_pci_hw_t *hw, struct vring *vr)

@@ -29,7 +29,8 @@ int virtio_vring_init(struct vring *vr, u8 *buf, u32 buf_len, u32 qsize, int qid
 
 	printf("buf: %p, len: %d, qsize: %d\n", buf, buf_len, qsize);
 
-	vr->size = qsize;	// 条目数
+    // initialize vring structure
+	vr->size = qsize;
 	vr->qid = qid;
 	vr->desc = (struct vring_desc *)VQ_ALIGN(buf);
 	printf("vr->desc: %p\n", vr->desc);
