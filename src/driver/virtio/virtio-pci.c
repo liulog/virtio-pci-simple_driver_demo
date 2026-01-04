@@ -67,12 +67,11 @@ type 	region 		offset 	length	bar
 #define PCI_REG32(reg)  (*(volatile u32 *)(reg))
 #define PCI_REG64(reg)  (*(volatile u64 *)(reg))
 
-//struct virtio_pci_hw g_hw = { 0 };
-
+// Get the virtio config in related BAR
 static void *get_cfg_addr(u64 pci_base, struct virtio_pci_cap *cap)
 {   
-    // 对于 64bit来说是 BAR4 & BAR5
     u64 reg = pci_base + PCI_ADDR_BAR0 + 4 * cap->bar;
+    // the bar has been mapped to memory space when probing the pci device
     return (void *)((pci_config_read64(reg) & 0xFFFFFFFFFFFFFFF0) + cap->offset);
 }
 
@@ -80,15 +79,20 @@ int virtio_pci_read_caps(virtio_pci_hw_t *hw, u64 pci_base, trap_handler_fn *msi
 {
     struct virtio_pci_cap cap;
     u64 pos = 0;
-    //struct virtio_pci_hw *hw = &g_hw;
 
-    pos = pci_config_read8(pci_base + PCI_ADDR_CAP);         // 第一个 cap's offset in ECAM
-    printf("cap: 0x%016llx\n", pci_base + PCI_ADDR_CAP);     // cap pointer 在 ECAM 整个区域中的 offset
+    // read capability pointer
+    pos = pci_config_read8(pci_base + PCI_ADDR_CAP);
+    printf("cap: 0x%016llx\n", pci_base + PCI_ADDR_CAP);
 
-    // 遍历所有的 capability
+    // Check all capabilities
     while (pos) {
         pos += pci_base;
+        // Get the whole capability structure from PCI config space
         pci_config_read(&cap, sizeof(cap), pos);
+
+        // There are two types of cao_vndr for virtio-pci:
+        //  - PCI_CAP_ID_VNDR(0x09): vendor-specific Cap
+        //  - PCI_CAP_ID_MSIX(0x11): MSI-X Capability
 
         if (cap.cap_vndr != PCI_CAP_ID_VNDR) {         // PCI_CAP_ID_VNDR vendor-specific Cap 
 			printf("[%2llx] skipping non VNDR cap id: %02x\n",
@@ -101,23 +105,33 @@ int virtio_pci_read_caps(virtio_pci_hw_t *hw, u64 pci_base, trap_handler_fn *msi
 
         switch (cap.cfg_type) {
 		case VIRTIO_PCI_CAP_COMMON_CFG:
+            // Get the common cfg address (common cfg in BAR)
 			hw->common_cfg = get_cfg_addr(pci_base, &cap);
             printf("common_cfg addr: %016llx\n", (u64)hw->common_cfg);
 			break;
 		case VIRTIO_PCI_CAP_NOTIFY_CFG:
-			pci_config_read(&hw->notify_off_multiplier,
-					4, pos + sizeof(cap));
+            // Get the notify cfg address (notify cfg in BAR)
+			pci_config_read(&hw->notify_off_multiplier, 4, pos + sizeof(cap));
             hw->notify_cfg = get_cfg_addr(pci_base, &cap);
             printf("notify_cfg addr: %016llx\n", (u64)hw->notify_cfg);
 			break;
 		case VIRTIO_PCI_CAP_DEVICE_CFG:
+            // Get the device cfg address (device cfg in BAR)
 			hw->device_cfg = get_cfg_addr(pci_base, &cap);
             printf("device_cfg addr: %016llx\n", (u64)hw->device_cfg);
 			break;
 		case VIRTIO_PCI_CAP_ISR_CFG:
+            // Get the isr cfg address (isr cfg in BAR)
 			hw->isr_cfg = get_cfg_addr(pci_base, &cap);
             printf("isr_cfg addr: %016llx\n", (u64)hw->isr_cfg);
 			break;
+        case VIRTIO_PCI_CAP_PCI_CFG:
+            // PCI config capability, we can ignore it here
+            printf("pci cfg cap, ignore it.\n");
+            break;
+        default:
+            printf("unknown virtio pci cap type: %u\n", cap.cfg_type);
+            break;
 		}
 next:
 		pos = cap.cap_next;

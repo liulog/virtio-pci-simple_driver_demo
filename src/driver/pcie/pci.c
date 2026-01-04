@@ -89,7 +89,11 @@ u64 pci_device_probe(u16 vendor_id, u16 device_id)
             // int addrbit = 0;
             for(int i = 0; i < 6; i++) {
                 u32 old = base[4+i];
+                u32 orig = old & 0xF;
                 u32 prefetchable = (old & 0x8) == 0x8;
+                // For virtio-pci devices, we always allocate MMIO space
+                //  ignore BAR's prefetchable attribute.
+                prefetchable = 0;
                 printf("bar%d origin value: 0x%08x\t", i, old);
                 if(prefetchable) {
                     printf("prefetchable\t");
@@ -120,7 +124,7 @@ u64 pci_device_probe(u16 vendor_id, u16 device_id)
                     } else {
                         mem_addr = pci_alloc_mmio(sz);
                     }
-                    base[4+i] = (u32)(mem_addr);
+                    base[4+i] = orig | (u32)(mem_addr);
                     base[4+i+1] = (u32)(mem_addr >> 32);
                     printf("bar%d mem_addr: 0x%016llx\n", i, mem_addr);
                     i++;
@@ -136,10 +140,11 @@ u64 pci_device_probe(u16 vendor_id, u16 device_id)
                     if (sz == 0) { continue; }
 
                     printf("bar%d need size: 0x%08x\n", i, sz);
+
                     if (prefetchable) {
-                        base[4+i] = (u32)pci_alloc_mmio_prefetch((u64)sz);
+                        base[4+i] = orig | (u32)pci_alloc_mmio_prefetch((u64)sz);
                     } else {
-                        base[4+i] = (u32)pci_alloc_mmio((u64)sz);
+                        base[4+i] = orig | (u32)pci_alloc_mmio((u64)sz);
                     }
                     printf("bar%d mem_addr: 0x%016llx\n", i, (u64)base[4+i]);
                 }

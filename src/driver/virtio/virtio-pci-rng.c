@@ -25,13 +25,12 @@ int virtio_pci_rng_init(void)
 
 	if (pci_base) {
 		virtio_pci_read_caps(&gs_virtio_rng_hw, pci_base, gs_rng_msix_handler);
-		virtio_pci_print_common_cfg(&gs_virtio_rng_hw); // 此时只是探测, 还未写入
+		virtio_pci_print_common_cfg(&gs_virtio_rng_hw);
 	} else {
         printf("virtion-rng-pci device not found!\n");
         return -1;
     }
 
-    // 以下内容主要操作 common_cfg
     // 1. reset device
     virtio_pci_set_status(&gs_virtio_rng_hw, 0);
 
@@ -114,8 +113,7 @@ int virtio_pci_rng_read(u8 *buf, int len)
     int qnum = 0;
     struct virtio_rng *rng = &gs_virtio_rng;
     
-    // 获取下一个 avail_ring's idx
-    int idx = rng->avail_idx++ % rng->vr.size;  // 注: 执行完这条语句后 ++ 
+    int idx = rng->avail_idx++ % rng->vr.size;
     
     printf("buf: %p, len: %d\n", buf, len);
     printf("idx: %d, avail: %d, used_idx: %d, used->idx: %d\n",
