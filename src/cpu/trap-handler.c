@@ -57,7 +57,7 @@ void handle_external_trap()
 	int irq = plic_claim();
 	if (irq == UART0_IRQ) {
 		UartIsr();
-	} else if (irq == PCIE_IRQ) {
+	} else if (irq == PCIE_IRQ_PINB) {
 		virtio_pci_blk_intr(irq);
 	} else {
 		printf("unknow external isr: %d\n", irq);
