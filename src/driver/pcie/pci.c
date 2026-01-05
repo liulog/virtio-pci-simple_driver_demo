@@ -74,7 +74,7 @@ u64 pci_device_probe(u16 vendor_id, u16 device_id)
             u32 id = base[0];   // device_id + vendor_id
 
             if (id != pci_id) continue;
-
+            printf("Found PCI device at bus %d, dev %d, func %d\n", bus, dev, func);
             ret = off;
 
             // command and status register.

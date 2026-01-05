@@ -62,7 +62,7 @@ struct virtio_blk_req {
   u64 sector;
 };
 
-struct virtio_blk {
+struct virtio_blk { // self-defined blk device structure
     u8  status[BLK_QSIZE];
     void *info[BLK_QSIZE];
     // disk command headers.
@@ -75,9 +75,9 @@ struct virtio_blk {
 	u16 avail_idx;
 };
 
-struct blk_buf {
-    u32 	addr;       // bytes address
-    void  	*data;
+struct blk_buf {    // self-defined blk buffer structure
+    u32 	addr;       // bytes address in blk device
+    void  	*data;      // refer to data buffer
     u32 	data_len;
     u16  	is_write;
     u16  	flag;

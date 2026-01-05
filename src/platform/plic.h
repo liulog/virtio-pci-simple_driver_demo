@@ -6,7 +6,10 @@
 #define VIRTIO0_IRQ     0x01 // rng
 #define VIRTIO1_IRQ     0x02 // blk
 #define VIRTIO2_IRQ     0x03 // net
-#define PCIE_IRQ        0x21 // pci-net
+#define PCIE_IRQ_PINA   0x20
+#define PCIE_IRQ_PINB   0x21
+#define PCIE_IRQ_PINC   0x22
+#define PCIE_IRQ_PIND   0x23
 #define UART0_IRQ       0x0a
 
 void plic_init(void);

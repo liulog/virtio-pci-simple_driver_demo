@@ -27,26 +27,26 @@ int main(void)
 {
 	plt_virt_init();
 
-	printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n");
-	printf("  version is: %d\n", version);
-	printf("  %s\n\n", hello);
-	printf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
+    printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n");
+    printf("  \033[32mversion is: %d\n", version);
+    printf("  %s\033[0m\n\n", hello);
+    printf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
 	printf("\n	Begin Test:\n\n");
 
 	// pci_rng_test
 	printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
-	printf("virtio pci rng test:\n");
+	printf("virtio pci rng test:\n\n");
 	virtio_pci_rng_test();
 	printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
-	printf("virtio pci blk test:\n");
+	printf("virtio pci blk test:\n\n");
 
 	// pci_blk_test
-	// virtio_pci_blk_test();
+	virtio_pci_blk_test();
 	printf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
-	
+    printf("virtio pci blk test 2:\n\n");
 	virtio_pci_blk_test2();
 
-	printf("\nAll tests done!\n");
+	printf("\n\033[32mAll tests done!\033[0m\n");
 	
     shutdown(0);
 
@@ -90,27 +90,27 @@ void virtio_pci_blk_test(void)
 	if(r!=0){ return; }
 
 	int dlen = DATA_LEN;
-	for (int i = 0; i < dlen; ++i) {		// dlen = DATA_LEN = 512 * 2
+	for (int i = 0; i < dlen; ++i) {		// dlen = DATA_LEN = 512 * 2 Bytes
 		read_buf[i] = i;
 	}
 	struct blk_buf req = { 0 };
 	printf("blk test...\n");
-	for (int n = 0; n < TEST_CNT; ++n) {
+	for (int n = 0; n < TEST_CNT; ++n) {    // n = 0..16
 		printf("==== n: %d ====\n", n);
 		// blk write
-		req.addr = n * dlen;				// blk write addr
-		req.data = read_buf;						// buffer addr
+		req.addr = n * dlen;				// data_addr in blk device
+		req.data = read_buf;				// buffer addr
 		req.data_len = dlen;				// buffer len
-		req.is_write = 1;					// 向磁盘写入
+		req.is_write = 1;					// blk write
 		virtio_pci_blk_rw(&req);
 		
 		memset(read_buf, 0, dlen);
 
 		// blk read
-		req.addr = n * dlen;				// blk read addr
-		req.data = read_buf;						// buffer addr
+		req.addr = n * dlen;				// data_addr in blk device
+		req.data = read_buf;			    // buffer addr
 		req.data_len = dlen;				// buffer len
-		req.is_write = 0;					// 从磁盘读取
+		req.is_write = 0;					// blk read
 		virtio_pci_blk_rw(&req);
 		// check read data
 		for (int j = 0; j < dlen; ++j) {
@@ -126,12 +126,11 @@ void virtio_pci_blk_test(void)
 }
 
 void virtio_pci_blk_test2(){
-	int r = virtio_pci_blk_init();	// 注意: 不要重复初始化!
-	printf("r: %d\n", r);
+	// int r = virtio_pci_blk_init();	// Note: don't init again
+	// printf("r: %d\n", r);
+	// if(r!=0){ return; }
 
-	if(r!=0){ return; }
-
-	int dlen = DATA_LEN / 2;		// 读一部分打印出来
+	int dlen = DATA_LEN / 2;
 	memset(read_buf, 0, dlen);
 
 	struct blk_buf req = { 0 };
@@ -140,7 +139,7 @@ void virtio_pci_blk_test2(){
 	req.addr = 0;						// blk read addr
 	req.data = read_buf;				// buffer addr
 	req.data_len = dlen;				// buffer len
-	req.is_write = 0;					// 从磁盘读取
+	req.is_write = 0;					// blk read
 
 	virtio_pci_blk_rw(&req);
 	

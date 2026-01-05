@@ -237,19 +237,16 @@ void *virtio_pci_get_queue_notify_addr(virtio_pci_hw_t *hw, int qid)
 {
     struct virtio_pci_common_cfg *cfg = hw->common_cfg;
 
-    // 对应的 virtqueue
     PCI_REG16(&cfg->queue_select) = qid;
     dsb();
 
-    // 获得地址
     u16 notify_off = PCI_REG16(&cfg->queue_notify_off);
     return (void *)((u64)hw->notify_cfg + notify_off * hw->notify_off_multiplier);
 }
 
-// 通知 qid 对应的 virt queue
 void virtio_pci_set_queue_notify(virtio_pci_hw_t *hw, int qid)
 {
-    // notify addr, 计算 notify 地址, 然后通知
+    // calulate notify addr
     void *pt = virtio_pci_get_queue_notify_addr(hw, qid);
     PCI_REG32(pt) = 1;
 }
@@ -261,7 +258,7 @@ void virtio_pci_set_queue_enable(virtio_pci_hw_t *hw, int qid)
     PCI_REG16(&cfg->queue_select) = qid;
     dsb();
 
-    PCI_REG16(&cfg->queue_enable) = 1;;
+    PCI_REG16(&cfg->queue_enable) = 1;
 }
 
 u16 virtio_pci_get_queue_enable(virtio_pci_hw_t *hw, int qid)
@@ -289,12 +286,10 @@ void virtio_pci_set_queue_msix(virtio_pci_hw_t *hw, int qid, u16 msix_vector)
 {
     struct virtio_pci_common_cfg *cfg = hw->common_cfg;
 
-    // 首先 Queue Select 选择 对应的 VirtQueue
     PCI_REG16(&cfg->queue_select) = qid;
     dsb();
 
-    // 然后写入中断向量
-    PCI_REG16(&cfg->queue_msix_vector) = msix_vector;   // 写入 msix-vector
+    PCI_REG16(&cfg->queue_msix_vector) = msix_vector;
 }
 
 void virtio_pci_disable_config_msix(virtio_pci_hw_t *hw)
@@ -309,7 +304,6 @@ void virtio_pci_set_config_msix(virtio_pci_hw_t *hw, u16 msix_vector)
 {
     struct virtio_pci_common_cfg *cfg = hw->common_cfg;
 
-    // config msix vector 对应的中断向量
     PCI_REG16(&cfg->config_msix_vector) = msix_vector;
     dsb();
 }
@@ -380,7 +374,7 @@ int virtio_pci_setup_queue(virtio_pci_hw_t *hw, struct vring *vr)
 
     PCI_REG16(&cfg->queue_enable) = 1;
 
-	printf("queue %u addresses:\n", vr->qid);
+	printf("queue %d addresses:\n", vr->qid);
 	printf("\t desc_addr: 0x%08x\n", desc_addr);
 	printf("\t aval_addr: 0x%08x\n", avail_addr);
 	printf("\t used_addr: 0x%08x\n", used_addr);

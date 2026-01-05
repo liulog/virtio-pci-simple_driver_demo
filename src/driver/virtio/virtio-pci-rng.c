@@ -100,6 +100,7 @@ int virtio_pci_rng_init(void)
     // (1) set queue size.
     virtio_pci_set_queue_size(&gs_virtio_rng_hw, qnum, qsize);
     // (2) disable msix.
+    virtio_pci_disable_config_msix(&gs_virtio_rng_hw);
     virtio_pci_disable_queue_msix(&gs_virtio_rng_hw, qnum);
     // (3) write physical addresses (desc table, avail ring, used ring).
     virtio_pci_set_queue_addr(&gs_virtio_rng_hw, qnum, &gs_virtio_rng.vr);
